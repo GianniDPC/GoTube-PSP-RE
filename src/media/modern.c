@@ -159,7 +159,7 @@ static int number_digits(const char *text)
 int go_modern_is_source(void)
 {
     return g_site_sel >= 0 && g_site_sel < g_site_count &&
-           strcmp(g_site_names[g_site_sel], "YouTube") == 0;
+           strncmp(g_site_names[g_site_sel], "YouTube", 7) == 0;
 }
 
 int go_modern_search(const char *keyword, int page)

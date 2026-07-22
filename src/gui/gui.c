@@ -884,6 +884,8 @@ void go_gui_render(void)
             sceGuEnable(GU_BLEND);
             sceGuBlendFunc(GU_ADD, GU_SRC_ALPHA,
                            GU_ONE_MINUS_SRC_ALPHA, 0, 0);
+            intraFontActivate(g_font);
+            sceGuColor(0xffffffff);
             print_text(0.7f, 0xffffffff, g_origin_x + 150,
                        g_origin_y + 136,
                        g_search_status[0] ? g_search_status : "Searching...");

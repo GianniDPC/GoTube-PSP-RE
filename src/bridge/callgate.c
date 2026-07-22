@@ -70,7 +70,11 @@ void go_callgate_sitelist(JSContext *cx)
                            g_site_names[g_site_count], 1024);
             extract_string(cx, JSVAL_TO_OBJECT(val), "SearchDesc",
                            g_site_search_desc[g_site_count], 128);
-            if (strcmp(g_site_names[g_site_count], "YouTube") == 0)
+            /* MultiView mutates the historical descriptor into
+             * "YouTube > ..." before this call.  Remove every legacy form;
+             * otherwise it remains a second selectable provider that blocks
+             * synchronously on the dead 2009 endpoint. */
+            if (strncmp(g_site_names[g_site_count], "YouTube", 7) == 0)
                 g_site_names[g_site_count][0] = 0;
             if (g_site_names[g_site_count][0])
                 g_site_count++;

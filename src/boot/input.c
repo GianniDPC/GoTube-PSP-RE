@@ -83,6 +83,9 @@ void go_search_page(int page)
         return;
     }
     if (go_modern_is_source()) {
+        go_modern_trace("DISPATCH modern page=%d busy=%d site_index=%d name=%.32s",
+                        page, g_search_busy, g_site_sel,
+                        g_site_names[g_site_sel]);
         if (g_search_busy) {
             strcpy(g_search_status, "YouTube search is already running...");
             return;
@@ -101,9 +104,12 @@ void go_search_page(int page)
         g_search_busy = 1;
         g_search_thread = sceKernelCreateThread("GoTube.search",
             modern_search_worker, 0x25, 0x20000, PSP_THREAD_ATTR_USER, NULL);
+        go_modern_trace("DISPATCH thread create=%d", g_search_thread);
         if (g_search_thread >= 0 &&
-            sceKernelStartThread(g_search_thread, 0, NULL) >= 0)
+            sceKernelStartThread(g_search_thread, 0, NULL) >= 0) {
+            go_modern_trace("DISPATCH thread started");
             return;
+        }
         if (g_search_thread >= 0) sceKernelDeleteThread(g_search_thread);
         g_search_thread = -1;
         g_search_busy = 0;

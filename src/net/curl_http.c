@@ -116,6 +116,7 @@ char *go_curl_post_json(const char *url, const char *json,
     CURL *curl;
     CURLcode result;
     long status = 0;
+    long verify_result = 0;
     CurlBody body;
     struct curl_slist *headers = NULL;
     char visitor_header[1024];
@@ -150,9 +151,11 @@ char *go_curl_post_json(const char *url, const char *json,
                     (int)strlen(json));
     result = curl_easy_perform(curl);
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status);
+    curl_easy_getinfo(curl, CURLINFO_SSL_VERIFYRESULT, &verify_result);
     curl_slist_free_all(headers); curl_easy_cleanup(curl);
-    go_modern_trace("HTTP POST end curl=%d status=%ld response=%d limit=%d error=%s",
-                    result, status, body.size, body.failed, error);
+    go_modern_trace("HTTP POST end curl=%d(%s) status=%ld verify=%ld response=%d limit=%d error=%s",
+                    result, curl_easy_strerror(result), status, verify_result,
+                    body.size, body.failed, error);
     if (result != CURLE_OK || status != 200 || body.failed) {
         free(body.data); return NULL;
     }

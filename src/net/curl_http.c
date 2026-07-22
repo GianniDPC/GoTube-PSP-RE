@@ -4,6 +4,9 @@
 #include <curl/curl.h>
 #include <malloc.h>
 #include <psprtc.h>
+#include <time.h>
+#include <mbedtls/ssl.h>
+#include <mbedtls/x509_crt.h>
 
 #define CA_FILE "ms0:/PSP/GAME/GoTube/cacert.pem"
 #define BODY_LIMIT (512 * 1024)
@@ -23,9 +26,78 @@ typedef struct {
 
 static volatile int curl_state;
 
+static int rtc_x509_compare(const ScePspDateTime *rtc,
+                            const mbedtls_x509_time *cert)
+{
+#define DATE_FIELD(rtc_field, cert_field) do { \
+    if ((int)rtc->rtc_field != cert->cert_field) \
+        return (int)rtc->rtc_field < cert->cert_field ? -1 : 1; \
+} while (0)
+    DATE_FIELD(year, year); DATE_FIELD(month, mon); DATE_FIELD(day, day);
+    DATE_FIELD(hour, hour); DATE_FIELD(minute, min);
+    DATE_FIELD(second, sec);
+#undef DATE_FIELD
+    return 0;
+}
+
+static int tls_verify_trace(void *opaque, mbedtls_x509_crt *cert,
+                            int depth, uint32_t *flags)
+{
+    char subject[128];
+    ScePspDateTime utc;
+    uint32_t original = *flags;
+    (void)opaque;
+    memset(&utc, 0, sizeof(utc));
+    /* mbedTLS 2.28 on the PSP reports BADCERT_FUTURE even when time() has the
+     * correct epoch. Re-check only the two validity flags against the PSP RTC
+     * in UTC. Trust, signatures, key usage and hostname remain untouched. */
+    if (sceRtcGetCurrentClock(&utc, 0) >= 0) {
+        if ((*flags & MBEDTLS_X509_BADCERT_FUTURE) &&
+            rtc_x509_compare(&utc, &cert->valid_from) >= 0)
+            *flags &= ~MBEDTLS_X509_BADCERT_FUTURE;
+        if ((*flags & MBEDTLS_X509_BADCERT_EXPIRED) &&
+            rtc_x509_compare(&utc, &cert->valid_to) <= 0)
+            *flags &= ~MBEDTLS_X509_BADCERT_EXPIRED;
+    }
+    subject[0] = 0;
+    mbedtls_x509_dn_gets(subject, sizeof(subject), &cert->subject);
+    go_modern_trace("TLS verify depth=%d flags=0x%08x->0x%08x valid=%04d-%02d-%02d..%04d-%02d-%02d subject=%.60s",
+                    depth, (unsigned int)original, (unsigned int)*flags,
+                    cert->valid_from.year, cert->valid_from.mon,
+                    cert->valid_from.day, cert->valid_to.year,
+                    cert->valid_to.mon, cert->valid_to.day, subject);
+    return 0;
+}
+
+static CURLcode tls_context(CURL *curl, void *context, void *opaque)
+{
+    (void)curl; (void)opaque;
+    mbedtls_ssl_conf_verify((mbedtls_ssl_config *)context,
+                            tls_verify_trace, NULL);
+    return CURLE_OK;
+}
+
+/* newlib's generic time() backend is not connected to the PSP RTC in every
+ * homebrew runtime configuration. mbedTLS calls time() directly for X.509
+ * validity checks, while the application previously checked the correct RTC
+ * through sceRtcGetCurrentClockLocalTime(). Supply the UTC epoch from the RTC
+ * so both checks use the same real clock. This symbol also satisfies the
+ * static mbedX509 archive before libc's fallback time() is pulled in. */
+time_t time(time_t *result)
+{
+    ScePspDateTime utc;
+    time_t value = (time_t)-1;
+    memset(&utc, 0, sizeof(utc));
+    if (sceRtcGetCurrentClock(&utc, 0) >= 0)
+        sceRtcGetTime_t(&utc, &value);
+    if (result) *result = value;
+    return value;
+}
+
 int go_modern_clock_valid(void)
 {
     ScePspDateTime now;
+    time_t tls_now;
     memset(&now, 0, sizeof(now));
     if (sceRtcGetCurrentClockLocalTime(&now) < 0) {
         go_modern_trace("CLOCK read failed");
@@ -34,6 +106,8 @@ int go_modern_clock_valid(void)
     go_modern_trace("CLOCK local=%04d-%02d-%02d %02d:%02d:%02d",
                     now.year, now.month, now.day, now.hour, now.minute,
                     now.second);
+    tls_now = time(NULL);
+    go_modern_trace("CLOCK TLS epoch=%ld", (long)tls_now);
     /* The bundled GTS roots begin in 2016 and expire in 2036. */
     return now.year >= 2016 && now.year <= 2036;
 }
@@ -76,6 +150,7 @@ static void curl_common(CURL *curl, const char *url)
      * use only the certificate bundle shipped beside the EBOOT. */
     curl_easy_setopt(curl, CURLOPT_CAPATH, NULL);
     curl_easy_setopt(curl, CURLOPT_CAINFO, CA_FILE);
+    curl_easy_setopt(curl, CURLOPT_SSL_CTX_FUNCTION, tls_context);
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L);
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);

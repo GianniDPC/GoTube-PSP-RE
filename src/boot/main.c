@@ -58,6 +58,27 @@ int user_main(SceSize args, void *argp)
     go_splash_init();  /* boot splash (firmware, hardware detection, credit) */
     setup_callbacks();
 
+#ifdef GT_LOCAL_SMOKE
+    /* Emulator-only end-to-end transport/parser smoke test. This is excluded
+     * from release builds and bypasses utility dialogs, which PPSSPP handles
+     * differently from real firmware. All network/TLS/provider code remains
+     * identical to production. */
+    g_site_sel = g_site_count - 1;
+    strcpy(g_search_keyword, "psp");
+    g_net_online = 1;
+    go_modern_trace("SMOKE network_init=%d", ensure_network());
+    go_modern_clock_valid();
+    {
+        int smoke_results = go_modern_search(g_search_keyword, 1);
+        go_modern_trace("SMOKE search_results=%d first=%.80s",
+                        smoke_results,
+                        smoke_results > 0 ? g_results[0].title : "");
+    }
+    sceKernelDelayThread(1000000);
+    sceKernelExitGame();
+    return 0;
+#endif
+
 
     /* 9. MAIN LOOP */
     for (;;) {

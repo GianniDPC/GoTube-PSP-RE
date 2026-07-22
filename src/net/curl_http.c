@@ -3,6 +3,7 @@
 #include "gotube.h"
 #include <curl/curl.h>
 #include <malloc.h>
+#include <psprtc.h>
 
 #define CA_FILE "ms0:/PSP/GAME/GoTube/cacert.pem"
 #define BODY_LIMIT (512 * 1024)
@@ -21,6 +22,21 @@ typedef struct {
 } CurlStream;
 
 static volatile int curl_state;
+
+int go_modern_clock_valid(void)
+{
+    ScePspDateTime now;
+    memset(&now, 0, sizeof(now));
+    if (sceRtcGetCurrentClockLocalTime(&now) < 0) {
+        go_modern_trace("CLOCK read failed");
+        return 0;
+    }
+    go_modern_trace("CLOCK local=%04d-%02d-%02d %02d:%02d:%02d",
+                    now.year, now.month, now.day, now.hour, now.minute,
+                    now.second);
+    /* The bundled GTS roots begin in 2016 and expire in 2036. */
+    return now.year >= 2016 && now.year <= 2036;
+}
 
 void go_modern_trace(const char *format, ...)
 {

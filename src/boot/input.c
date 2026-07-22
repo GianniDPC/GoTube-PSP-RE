@@ -17,19 +17,23 @@ static int modern_search_worker(SceSize args, void *argp)
 {
     int result;
     (void)args; (void)argp;
-    result = go_modern_search(g_search_keyword, g_search_thread_page);
+    if (!go_modern_clock_valid()) result = -2;
+    else result = go_modern_search(g_search_keyword, g_search_thread_page);
     g_result_count = result > 0 ? result : 0;
     g_result_sel = 0;
-    if (result < 0)
+    if (result == -2)
+        strcpy(g_search_status, "Set the PSP date/time, then search again");
+    else if (result < 0)
         strcpy(g_search_status, "YouTube network/TLS error - see modern.log");
     else if (result == 0)
         strcpy(g_search_status, "No compatible YouTube results");
     else
         g_search_status[0] = 0;
-    g_search_busy = 0;
     __sync_synchronize();
     g_screen = SCR_RESULTS;
-    sceKernelExitThread(0);
+    g_search_thread = -1;
+    g_search_busy = 0;
+    sceKernelExitDeleteThread(0);
     return 0;
 }
 
@@ -78,15 +82,20 @@ void go_search_page(int page)
         g_screen = SCR_RESULTS;
         return;
     }
-    g_screen = SCR_SEARCHING;
-    go_thumbnails_reset();
     if (go_modern_is_source()) {
-        if (g_search_busy) return;
+        if (g_search_busy) {
+            strcpy(g_search_status, "YouTube search is already running...");
+            return;
+        }
         if (g_search_thread >= 0) {
-            sceKernelWaitThreadEnd(g_search_thread, NULL);
+            /* A finished PSP thread remains as a deletable object.  Waiting
+             * for it here ran from the post-OSK render path and could strand
+             * the UI before another frame was presented. */
             sceKernelDeleteThread(g_search_thread);
             g_search_thread = -1;
         }
+        g_screen = SCR_SEARCHING;
+        go_thumbnails_reset();
         g_search_thread_page = page;
         strcpy(g_search_status, "Searching YouTube...");
         g_search_busy = 1;
@@ -103,6 +112,8 @@ void go_search_page(int page)
         g_screen = SCR_RESULTS;
         return;
     }
+    g_screen = SCR_SEARCHING;
+    go_thumbnails_reset();
     /* FUN_0001da58 dispatches through the active native descriptor callback.
      * Favorites and Playlist therefore never pass through the JS CallGate;
      * doing so emptied the list after Select and made L/R pagination fail. */
@@ -199,7 +210,14 @@ void go_input_poll(void)
             go_thumbnails_reset();
             g_result_count = g_result_total = 0;
             g_result_start = g_result_end = g_result_sel = 0;
-            g_source_delay = 15;
+            if (go_modern_is_source()) {
+                g_source_delay = 0;
+                strcpy(g_search_status, "Press Circle to search YouTube");
+                g_screen = SCR_RESULTS;
+            } else {
+                g_search_status[0] = 0;
+                g_source_delay = 15;
+            }
         }
         if (pressed & PSP_CTRL_UP) {
             if (g_result_sel > 0) g_result_sel--;

@@ -66,6 +66,11 @@ make -j4
 make historical-package
 ```
 
+The package also builds `cooleyesBridge.prx`, the GPL-2.0-or-later
+firmware-NID bridge derived from cooleyes' PMPlayer Advance source. It enables
+the optional PSP hardware AVC backend; unsupported firmware/emulators fall back
+to FFmpeg automatically.
+
 The installable directory is generated at `release/GoTube/`. Copy that entire
 folder to `ms0:/PSP/GAME/GoTube/` on the Memory Stick.
 

@@ -192,8 +192,16 @@ int go_player_progress(void);
 int go_player_planes(const unsigned char **y, const unsigned char **v,
                      const unsigned char **u, int *width, int *height,
                      int *y_stride, int *uv_stride);
+int go_player_rgba(const unsigned char **rgba, int *width, int *height,
+                   int *stride);
 int go_player_time_cs(void);
 int go_player_duration_cs(void);
+int go_avc_hw_init(const unsigned char *extra, int extra_size,
+                   int width, int height);
+int go_avc_hw_decode(const unsigned char *data, int size,
+                     const unsigned char **rgba, int *stride);
+int go_avc_hw_active(void);
+void go_avc_hw_shutdown(void);
 void go_player_set_source_url(const char *url);
 int go_player_matches_source(const char *url);
 typedef struct {

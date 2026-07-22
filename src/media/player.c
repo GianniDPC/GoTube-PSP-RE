@@ -23,6 +23,8 @@ static volatile int frame_width = 0;
 static volatile int frame_height = 0;
 static volatile int frame_y_stride = 0;
 static volatile int frame_uv_stride = 0;
+static const unsigned char *frame_rgba_ptr;
+static volatile int frame_rgba_stride = 0;
 static volatile int player_status = 0;
 static volatile int player_progress_value = 0;
 static volatile int player_cancel = 0;
@@ -63,6 +65,7 @@ typedef struct {
     int audio_reserved, audio_frame_samples;
     SceUID codec_lock;
     volatile int failed;
+    int hardware_avc;
 } PlayerPipeline;
 
 static void packet_queue_init(PlayerPacketQueue *q, const char *name)
@@ -161,6 +164,7 @@ static void publish_yuv420(const AVFrame *frame, int width, int height)
     if (width > Y_STRIDE_MAX || height > Y_HEIGHT_MAX) return;
     if (!frame->data[0] || !frame->data[1] || !frame->data[2] ||
         y_stride <= 0 || uv_stride <= 0 || frame->linesize[2] != uv_stride) return;
+    frame_rgba_ptr = NULL;
     frame_y_ptr = frame->data[0];
     frame_v_ptr = frame->data[2];
     frame_u_ptr = frame->data[1];
@@ -171,6 +175,17 @@ static void publish_yuv420(const AVFrame *frame, int width, int height)
     frame_height = height;
     frame_y_stride = y_stride;
     frame_uv_stride = uv_stride;
+    frame_index = 0;
+    player_frames_decoded++;
+}
+
+static void publish_rgba(const unsigned char *rgba, int width, int height,
+                         int stride)
+{
+    frame_rgba_ptr = rgba;
+    frame_rgba_stride = stride;
+    frame_width = width;
+    frame_height = height;
     frame_index = 0;
     player_frames_decoded++;
 }
@@ -227,6 +242,21 @@ static int video_decode_worker(SceSize args, void *argp)
                                (int64_t)(now - clock_start);
                 if (wait > 0) sceKernelDelayThread((unsigned int)wait);
             }
+        }
+        if (pipeline->hardware_avc && go_avc_hw_active()) {
+            const unsigned char *rgba = NULL;
+            int stride = 0;
+            int hw_result = go_avc_hw_decode(packet.data, packet.size,
+                                             &rgba, &stride);
+            if (hw_result > 0)
+                publish_rgba(rgba, pipeline->video->width,
+                             pipeline->video->height, stride);
+            if (hw_result >= 0) {
+                av_free_packet(&packet);
+                continue;
+            }
+            pipeline->hardware_avc = 0;
+            go_modern_trace("AVC_HW falling back to FFmpeg");
         }
         while (left > 0 && !player_cancel) {
             int used;
@@ -483,6 +513,10 @@ static int decode_file(const char *path, const char *audio_path, int remote)
             go_modern_trace("PLAYER video codec=%d size=%dx%d fast=%d lowres=%d",
                             video->codec_id, video->width, video->height,
                             !!(video->flags2 & CODEC_FLAG2_FAST), video->lowres);
+            if (audio_format && video->codec_id == CODEC_ID_H264 &&
+                go_avc_hw_init(video->extradata, video->extradata_size,
+                               video->width, video->height) == 0)
+                pipeline.hardware_avc = 1;
         }
     }
     if (audio_stream >= 0) {
@@ -587,6 +621,7 @@ static int decode_file(const char *path, const char *audio_path, int remote)
     if (audio_buffer) free(audio_buffer);
     if (stereo_buffer) free(stereo_buffer);
     if (picture) av_free(picture);
+    go_avc_hw_shutdown();
     if (video) avcodec_close(video);
     if (audio) avcodec_close(audio);
     if (audio_format) close_remote_format(audio_format, &audio_io_buffer);
@@ -611,6 +646,7 @@ fail:
     if (audio_buffer) free(audio_buffer);
     if (stereo_buffer) free(stereo_buffer);
     if (picture) av_free(picture);
+    go_avc_hw_shutdown();
     if (video) avcodec_close(video);
     if (audio) avcodec_close(audio);
     if (audio_format) close_remote_format(audio_format, &audio_io_buffer);
@@ -653,6 +689,7 @@ int go_player_start(const char *url)
     player_pause = 0;
     player_progress_value = 0;
     frame_index = -1;
+    frame_rgba_ptr = NULL;
     player_frames_decoded = 0;
     player_time_value = 0;
     player_duration_value = 0;
@@ -693,6 +730,7 @@ int go_player_start_adaptive(const char *video_url, const char *audio_url)
     player_pause = 0;
     player_progress_value = 0;
     frame_index = -1;
+    frame_rgba_ptr = NULL;
     player_frames_decoded = 0;
     player_time_value = 0;
     player_duration_value = 0;
@@ -729,6 +767,7 @@ int go_player_start_file(const char *path)
     player_pause = 0;
     player_progress_value = 1000;
     frame_index = -1;
+    frame_rgba_ptr = NULL;
     player_frames_decoded = 0;
     player_time_value = 0;
     player_duration_value = 0;
@@ -812,7 +851,7 @@ int go_player_planes(const unsigned char **y, const unsigned char **v,
                      int *y_stride, int *uv_stride)
 {
     int index = frame_index;
-    if (index < 0) return 0;
+    if (index < 0 || frame_rgba_ptr) return 0;
     if (y) *y = frame_y_ptr;
     if (v) *v = frame_v_ptr;
     if (u) *u = frame_u_ptr;
@@ -820,5 +859,16 @@ int go_player_planes(const unsigned char **y, const unsigned char **v,
     if (height) *height = frame_height;
     if (y_stride) *y_stride = frame_y_stride;
     if (uv_stride) *uv_stride = frame_uv_stride;
+    return 1;
+}
+
+int go_player_rgba(const unsigned char **rgba, int *width, int *height,
+                   int *stride)
+{
+    if (frame_index < 0 || !frame_rgba_ptr) return 0;
+    if (rgba) *rgba = frame_rgba_ptr;
+    if (width) *width = frame_width;
+    if (height) *height = frame_height;
+    if (stride) *stride = frame_rgba_stride;
     return 1;
 }

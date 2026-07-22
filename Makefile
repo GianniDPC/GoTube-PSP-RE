@@ -7,7 +7,7 @@ OBJS = \
 	src/bridge/native_registry.o \
 	src/gui/gui.o src/gui/menu.o src/gui/thumbnail.o src/gui/osk.o src/gui/netconf.o src/gui/splash.o \
 	src/natives/http.o \
-	src/media/audio.o src/media/player.o src/media/comments.o src/media/save.o src/media/local.o src/media/modern.o src/net/net.o src/net/curl_http.o \
+	src/media/audio.o src/media/player.o src/media/avc_hw.o src/media/comments.o src/media/save.o src/media/local.o src/media/modern.o src/net/net.o src/net/curl_http.o \
 	src/video/video.o src/video/dvemgr.o
 
 INCDIR = vendor/intrafont-0.22 vendor/intrafont-0.31 include third_party/ffmpeg-modern \
@@ -22,7 +22,7 @@ LIBDIR = third_party/ffmpeg-modern/libavformat third_party/ffmpeg-modern/libavco
 LIBS = -lavformat -lavcodec -lavutil -ljpeg -lcurl \
 	-lmbedtls -lmbedx509 -lmbedcrypto -lz -lm -lc -lcglue -lpthreadglue -lpthread -lpsprtc \
 	-lpspgum -lpspgu -lpspge -lpspdisplay -lpspctrl -lpsppower \
-	-lpsputility -lpsphttp -lpspssl -lpspnet -lpspnet_inet \
+	-lpsputility -lpspmpegbase -lpsphttp -lpspssl -lpspnet -lpspnet_inet \
 	-lpspnet_apctl -lpspnet_resolver -lpspwlan -lpsphprm -lpspkubridge -lpspsdk -lpspaudio
 
 BUILD_PRX = 1
@@ -35,8 +35,13 @@ PSP_EBOOT_SND0 = assets/SND0.AT3
 PSPSDK := $(shell psp-config --pspsdk-path)
 include $(PSPSDK)/lib/build.mak
 
-.PHONY: historical-package
-historical-package: EBOOT.PBP
+GoTube.elf: src/media/mpeg_extra.o src/media/cooleyes_stub.o
+
+.PHONY: historical-package cooleyes-bridge
+cooleyes-bridge:
+	$(MAKE) -C src/prx/cooleyes_bridge
+
+historical-package: EBOOT.PBP cooleyes-bridge
 	mkdir -p release/GoTube/site
 	rm -f release/GoTube/cfg.js release/GoTube/site.js \
 		release/GoTube/update.js release/GoTube/site/ext.js \
@@ -46,3 +51,4 @@ historical-package: EBOOT.PBP
 	cp runtime/cacert.pem release/GoTube/cacert.pem
 	cp runtime/dvemgr.prx release/GoTube/dvemgr.prx
 	cp runtime/mediaengine.prx release/GoTube/mediaengine.prx
+	cp src/prx/cooleyes_bridge/cooleyesBridge.prx release/GoTube/cooleyesBridge.prx

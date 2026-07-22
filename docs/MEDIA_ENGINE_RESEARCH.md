@@ -1,6 +1,6 @@
 # PSP Media Engine acceleration research
 
-Status: research complete; no playback code changed by this investigation.
+Status: hardware backend implemented behind an automatic software fallback.
 
 ## Result
 
@@ -114,10 +114,17 @@ be qualified on a real PSP.
 
 ## Decision
 
-Do not wire the bundled `mediaengine.prx` into the current FFmpeg decoder. Keep
-it as preserved original media. Build the isolated firmware-AVC fixture probe
-next. If that succeeds on hardware, it is the most credible path to smooth
-playback without sacrificing GoTube's on-device-only requirement.
+The bundled `mediaengine.prx` remains preserved original media and is not wired
+into FFmpeg. The implemented backend instead follows the direct-MP4 decoder
+contract published by cooleyes: it loads the firmware `mpeg_vsh.prx`, starts
+the correct Media Engine mode through a small firmware-NID bridge, submits the
+MOV demuxer's AVC samples, and uses the hardware CSC to produce a GU texture.
+
+The backend is attempted only for the adaptive itag-160 stream. Initialization
+or decoding failure immediately returns to the already-open FFmpeg decoder.
+PPSSPP exercises this failure boundary (`sceMpegGetAvcNalAu` is unimplemented
+there) and completes playback through FFmpeg. Successful hardware decoding and
+its performance remain a physical-PSP qualification item.
 
 ## Primary references
 
@@ -129,3 +136,5 @@ playback without sacrificing GoTube's on-device-only requirement.
 - Custom Media Engine core: <https://github.com/mcidclan/psp-media-engine-custom-core>
 - Moonlight PSP implementation/history: <https://github.com/k4idyn/Moonlight-PSP>
 - Historical PSP AVC API constraints discussed by PMP Mod's author: <https://ffmpeg.org/pipermail/ffmpeg-devel/2006-June/013026.html>
+- PMPlayer Advance source archive: <https://code.google.com/archive/p/pmplayer-advance/>
+- Original direct-MP4 decoder discussion/sample: <https://forums.ps2dev.org/viewtopic.php?p=79313>

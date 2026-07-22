@@ -583,14 +583,35 @@ static void draw_t8_plane(const unsigned char *pixels, int stride,
                      left + first_draw, top, draw_w - first_draw, draw_h);
 }
 
+static void draw_rgba_frame(const unsigned char *pixels, int stride,
+                            int source_w, int source_h,
+                            int left, int top, int draw_w, int draw_h)
+{
+    struct { short u, v; short x, y, z; } *verts;
+    int texture_h = 1;
+    while (texture_h < source_h && texture_h < 512) texture_h <<= 1;
+    verts = (void *)sceGuGetMemory(2 * sizeof(*verts));
+    verts[0].u = 0; verts[0].v = 0;
+    verts[0].x = left; verts[0].y = top; verts[0].z = 0;
+    verts[1].u = source_w; verts[1].v = source_h;
+    verts[1].x = left + draw_w; verts[1].y = top + draw_h; verts[1].z = 0;
+    sceGuTexImage(0, 512, texture_h, stride, pixels);
+    sceGuDrawArray(GU_SPRITES,
+                   GU_TEXTURE_16BIT | GU_VERTEX_16BIT | GU_TRANSFORM_2D,
+                   2, 0, verts);
+}
+
 static int render_video_frame(void)
 {
     const unsigned char *y_plane, *v_plane, *u_plane;
+    const unsigned char *rgba;
     int width, height, y_stride, uv_stride;
     int draw_w, draw_h, left, top, crop = 0;
-    if (!go_player_planes(&y_plane, &v_plane, &u_plane,
-                          &width, &height, &y_stride, &uv_stride) ||
-        width < 1 || height < 1) return 0;
+    int packed = go_player_rgba(&rgba, &width, &height, &y_stride);
+    if (!packed &&
+        !go_player_planes(&y_plane, &v_plane, &u_plane,
+                          &width, &height, &y_stride, &uv_stride)) return 0;
+    if (width < 1 || height < 1) return 0;
     if (go_player_render_mode() == 0) {
         draw_w = g_canvas_w;
         draw_h = height * g_canvas_w / width;
@@ -608,6 +629,17 @@ static int render_video_frame(void)
         if (crop < 0) crop = 0;
         draw_w = g_canvas_w; draw_h = g_canvas_h;
         left = top = 0;
+    }
+    if (packed) {
+        sceGuEnable(GU_TEXTURE_2D);
+        sceGuTexMode(GU_PSM_8888, 0, 0, 0);
+        sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGBA);
+        sceGuTexFilter(GU_LINEAR, GU_LINEAR);
+        sceGuDisable(GU_BLEND);
+        draw_rgba_frame(rgba + crop * y_stride * 4, y_stride,
+                        width, height - crop * 2,
+                        left, top, draw_w, draw_h);
+        return 1;
     }
     init_video_clut();
     sceGuEnable(GU_TEXTURE_2D);

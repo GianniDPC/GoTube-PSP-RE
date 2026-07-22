@@ -386,6 +386,7 @@ int go_curl_stream_read(void *opaque, unsigned char *buffer, int size)
         long long available64 = stream->data_end - stream->position;
         int available = available64 > 0x7fffffff ? 0x7fffffff : (int)available64;
         int chunk, read_pos;
+        if (stream->cancel) return -1;
         if (available > 0) {
             chunk = available < size ? available : size;
             read_pos = (int)(stream->position % RING_SIZE);
@@ -397,6 +398,12 @@ int go_curl_stream_read(void *opaque, unsigned char *buffer, int size)
         else sceKernelDelayThreadCB(1000);
     }
     return copied;
+}
+
+void go_curl_stream_cancel(void *opaque)
+{
+    CurlStream *stream = opaque;
+    if (stream) stream->cancel = 1;
 }
 
 long long go_curl_stream_seek(void *opaque, long long offset, int whence)

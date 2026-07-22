@@ -35,6 +35,8 @@ static char player_audio_url[2048];
 static char player_source_url[512];
 static int player_local_file = 0;
 static int player_frames_decoded = 0;
+static void *volatile player_http_stream;
+static void *volatile player_audio_http_stream;
 static volatile int player_time_value = 0;
 static volatile int player_duration_value = 0;
 /* Shared dispatcher VA 0x2097c: Triangle cycles five overlay states and
@@ -237,10 +239,24 @@ static int video_decode_worker(SceSize args, void *argp)
             } else {
                 player_time_value = (int)((stamp - first_pts) *
                                     av_q2d(pipeline->video_time_base) * 100.0) + 100;
-                int64_t wait = (int64_t)((stamp - first_pts) *
-                               av_q2d(pipeline->video_time_base) * 1000000.0) -
-                               (int64_t)(now - clock_start);
-                if (wait > 0) sceKernelDelayThread((unsigned int)wait);
+                int64_t target = (int64_t)((stamp - first_pts) *
+                                 av_q2d(pipeline->video_time_base) * 1000000.0);
+                int64_t wait = target - (int64_t)(now - clock_start);
+                /* A discontinuity between fMP4 fragments must not become one
+                 * enormous, uninterruptible PSP sleep. Rebase pathological
+                 * forward gaps; split ordinary pacing into callback-friendly
+                 * slices so Cross/exit takes effect within 10 ms. */
+                if (wait > 250000) {
+                    go_modern_trace("PLAYER clock rebase wait_us=%lld pts=%lld",
+                                    (long long)wait, (long long)stamp);
+                    clock_start = now - target;
+                    wait = 0;
+                }
+                while (wait > 0 && !player_cancel) {
+                    unsigned int slice = wait > 10000 ? 10000 : (unsigned int)wait;
+                    sceKernelDelayThreadCB(slice);
+                    wait -= slice;
+                }
             }
         }
         if (pipeline->hardware_avc && go_avc_hw_active()) {
@@ -400,6 +416,7 @@ static int decode_file(const char *path, const char *audio_path, int remote)
             av_find_input_format("mov,mp4,m4a,3gp,3g2,mj2") :
             av_find_input_format("flv");
         http_stream = go_http_stream_open(path);
+        player_http_stream = http_stream;
         io_buffer = av_malloc(32768);
         if (!http_stream || !io_buffer || !input) goto fail;
         init_put_byte(&io, io_buffer, 32768, 0, http_stream,
@@ -415,6 +432,7 @@ static int decode_file(const char *path, const char *audio_path, int remote)
         if (av_open_input_stream(&format, &io, path, input, NULL) < 0) goto fail;
         if (audio_path && audio_path[0]) {
             audio_http_stream = go_http_stream_open(audio_path);
+            player_audio_http_stream = audio_http_stream;
             audio_io_buffer = av_malloc(32768);
             if (!audio_http_stream || !audio_io_buffer) goto fail;
             init_put_byte(&audio_io, audio_io_buffer, 32768, 0,
@@ -629,7 +647,9 @@ static int decode_file(const char *path, const char *audio_path, int remote)
         if (remote) close_remote_format(format, &io_buffer);
         else av_close_input_file(format);
     }
+    player_audio_http_stream = NULL;
     if (audio_http_stream) go_http_stream_close(audio_http_stream);
+    player_http_stream = NULL;
     if (http_stream) go_http_stream_close(http_stream);
     return player_cancel ? -1 : 0;
 
@@ -656,7 +676,9 @@ fail:
     }
     if (audio_io_buffer) av_free(audio_io_buffer);
     if (io_buffer) av_free(io_buffer);
+    player_audio_http_stream = NULL;
     if (audio_http_stream) go_http_stream_close(audio_http_stream);
+    player_http_stream = NULL;
     if (http_stream) go_http_stream_close(http_stream);
     return -1;
 }
@@ -793,6 +815,8 @@ void go_player_stop(void)
                     player_duration_value);
     player_cancel = 1;
     player_pause = 0;
+    if (player_http_stream) go_http_stream_cancel(player_http_stream);
+    if (player_audio_http_stream) go_http_stream_cancel(player_audio_http_stream);
 }
 
 void go_player_toggle_pause(void)

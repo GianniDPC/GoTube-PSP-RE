@@ -181,6 +181,13 @@ void go_http_stream_close(void *opaque)
     free(stream);
 }
 
+void go_http_stream_cancel(void *opaque)
+{
+    GTHttpStream *stream = opaque;
+    if (!stream) return;
+    if (stream->modern) go_curl_stream_cancel(stream->modern_stream);
+}
+
 int go_http_download(const char *url, const char *path,
                      volatile int *progress, volatile int *cancel)
 {

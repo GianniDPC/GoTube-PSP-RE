@@ -40,6 +40,7 @@ void *go_curl_stream_open(const char *url);
 int go_curl_stream_read(void *stream, unsigned char *buffer, int size);
 long long go_curl_stream_seek(void *stream, long long offset, int whence);
 void go_curl_stream_close(void *stream);
+void go_curl_stream_cancel(void *stream);
 int go_curl_download(const char *url, const char *path,
                      volatile int *progress, volatile int *cancel);
 void go_modern_trace(const char *format, ...);
@@ -48,6 +49,7 @@ void *go_http_stream_open(const char *url);
 int go_http_stream_read(void *stream, unsigned char *buffer, int size);
 long long go_http_stream_seek(void *stream, long long offset, int whence);
 void go_http_stream_close(void *stream);
+void go_http_stream_cancel(void *stream);
 void go_message_dialog(const char *message);
 int go_utility_button_swap(void);
 int ensure_network(void);

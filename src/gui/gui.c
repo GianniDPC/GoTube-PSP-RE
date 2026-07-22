@@ -371,6 +371,10 @@ static void render_results(void)
                      base_x + g_canvas_w - 4, base_y + 12,
                      g_net_online ? "\nOnline" : "\n ");
 
+    if (g_result_count == 0 && g_search_status[0])
+        print_text(0.6f, 0xff303030, base_x + 24, top + 28,
+                   g_search_status);
+
     for (i = first; i < g_result_count && top < content_bottom; i++, top += 100) {
         GTVideo *video = &g_results[i];
         int text_x = base_x + 140;
@@ -875,8 +879,14 @@ void go_gui_render(void)
             g_menu_visible_last = 1;
         }
         else if (g_screen == SCR_SEARCHING) {
-            /* Search dispatch is synchronous in VA 0x2097c; the original has
-             * no standalone "Searching..." renderer or literal. */
+            /* Modern TLS requests run off the render thread.  Keep the PSP
+             * responsive and make a slow/failing network operation explicit. */
+            sceGuEnable(GU_BLEND);
+            sceGuBlendFunc(GU_ADD, GU_SRC_ALPHA,
+                           GU_ONE_MINUS_SRC_ALPHA, 0, 0);
+            print_text(0.7f, 0xffffffff, g_origin_x + 150,
+                       g_origin_y + 136,
+                       g_search_status[0] ? g_search_status : "Searching...");
         }
     }
 

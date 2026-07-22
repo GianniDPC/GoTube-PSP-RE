@@ -139,6 +139,7 @@ int go_source_parent(void);
 int go_local_rename(const GTVideo *video, const char *filename);
 int go_local_delete(const GTVideo *video);
 extern int g_osk_mode; /* 0 search, 1 direct URL, 2 save filename, 3 rename */
+extern char g_search_status[128];
 
 /* --- resolved video URL for the player screen --- */
 extern char g_video_url[2048];

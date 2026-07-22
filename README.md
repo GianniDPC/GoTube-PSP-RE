@@ -32,10 +32,13 @@ preservation evidence and are not included in the modern install package.
 
 Playback requests use YouTube's JS-less Android VR client and select only
 progressive itag 18: one MP4 stream containing 360p H.264 Baseline video and
-AAC-LC audio. The PSP does not attempt to merge DASH tracks or decode AV1,
+AAC-LC audio. Modern streams use FFmpeg's half-resolution H.264 reconstruction
+(320x180), fast decoding and deblocking skip to stay within the PSP CPU budget.
+The PSP does not attempt to merge DASH tracks or decode AV1,
 VP9, Opus, high-profile H.264, or resolutions beyond its practical limits.
-The MP4 is consumed sequentially with a 256 KiB ring buffer, so the full video
-is neither stored in RAM nor downloaded before playback.
+The seekable MP4 transport uses a 512 KiB ring with 256 KiB protected history,
+so interleaved audio/video reads do not reconnect while the full video is
+neither stored in RAM nor downloaded before playback.
 
 This compatibility route cannot make every YouTube item playable. Live, DRM,
 age/account restricted, made-for-kids client-restricted, and videos without a

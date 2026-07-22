@@ -31,15 +31,16 @@ signature deciphering, or a PO token after an anonymous visitor-data handshake.
    The parser extracts at most ten compact video records per page.
 5. Player lookup requests the anonymous Android VR client and accepts only
    progressive itag 18 (MP4, H.264 Baseline, AAC-LC, normally 640x360).
-6. A 256 KiB producer/consumer ring connects libcurl to the recovered FFmpeg
-   custom IO path. Current itag-18 files place `moov` before `mdat`, so the old
-   MP4 demuxer can initialize without seeking or downloading the full file.
+6. A seekable 512 KiB producer/consumer ring connects libcurl to the recovered
+   FFmpeg custom IO path. Half is retained as backward history because MOV
+   alternates between audio and video chunks. Modern H.264 is reconstructed at
+   320x180 with fast decoding and deblocking disabled for the PSP CPU budget.
 7. HTTPS thumbnails and Save use the same verified transport.
 
 ## Resource bounds
 
 - Search/player response: 512 KiB maximum, freed after parsing.
-- Video network ring: 256 KiB.
+- Video network ring: 512 KiB (256 KiB protected seek history).
 - TLS/HTTP worker stack: 128 KiB.
 - Result set: ten UI records per page.
 - No adaptive-track merge, JavaScript VM for current player code, video

@@ -200,14 +200,22 @@ static int video_decode_worker(SceSize args, void *argp)
         if (stamp != (int64_t)AV_NOPTS_VALUE) {
             uint64_t now = sceKernelGetSystemTimeWide();
             player_time_value = (int)(stamp * av_q2d(pipeline->video_time_base) * 100.0) + 100;
-            if (!pipeline->audio) {
-                if (first_pts == (int64_t)AV_NOPTS_VALUE) { first_pts = stamp; clock_start = now; }
-                else {
-                    int64_t wait = (int64_t)((stamp - first_pts) *
-                                   av_q2d(pipeline->video_time_base) * 1000000.0) -
-                                   (int64_t)(now - clock_start);
-                    if (wait > 0) sceKernelDelayThread((unsigned int)wait);
-                }
+            /* Audio output is blocking, but it does not pace this independent
+             * video worker.  The former audio-present branch therefore
+             * published H.264 frames as quickly as the CPU decoded them (the
+             * smoke test advanced 83 seconds in 30), producing bursty motion
+             * and starving the other player threads.  PTS is the presentation
+             * clock in both cases; pace video to it whether audio exists or
+             * not.  When decoding falls behind, wait is negative and frames
+             * continue immediately, so this adds no penalty to a slow PSP. */
+            if (first_pts == (int64_t)AV_NOPTS_VALUE) {
+                first_pts = stamp;
+                clock_start = now;
+            } else {
+                int64_t wait = (int64_t)((stamp - first_pts) *
+                               av_q2d(pipeline->video_time_base) * 1000000.0) -
+                               (int64_t)(now - clock_start);
+                if (wait > 0) sceKernelDelayThread((unsigned int)wait);
             }
         }
         while (left > 0 && !player_cancel) {
@@ -309,16 +317,38 @@ static int decode_file(const char *path, int remote)
         video->error_resilience = 1;
         video->error_concealment = 3;
         video->thread_count = 1;
-        video->lowres = 0;
+        /* Decode YouTube's 640x360 stream directly to 320x180.  Scaling a
+         * fully reconstructed frame afterwards saves no decoder work; the
+         * H.264 lowres path reduces inverse transforms, motion compensation,
+         * cache traffic and GU texture upload while retaining enough detail
+         * for the PSP's 480x272 panel. */
+        video->lowres = remote && strstr(path, "itag=18") ? 1 : 0;
         video->idct_algo = 0;
+        /* Current YouTube's progressive stream is 640x360 H.264 at 30 fps,
+         * considerably heavier than the formats GoTube 1.2 targeted.  The
+         * 2007 decoder exposes its intended low-power H.264 path through
+         * FAST plus deblocking discard.  Deblocking is presentation polish,
+         * not required for correct reference reconstruction, and is one of
+         * the largest pure-CPU costs on Allegrex.  Preserve exact legacy/local
+         * playback settings; apply this only to modern remote MP4. */
+        if (remote && strstr(path, "itag=18")) {
+            video->flags2 |= CODEC_FLAG2_FAST;
+            video->skip_loop_filter = AVDISCARD_ALL;
+        } else {
+            video->skip_loop_filter = AVDISCARD_NONE;
+        }
         video->debug = 0;
         video->debug_mv = 0;
-        video->skip_loop_filter = AVDISCARD_NONE;
         video->skip_idct = AVDISCARD_NONE;
         video->skip_frame = AVDISCARD_NONE;
         codec = avcodec_find_decoder(video->codec_id);
         if (!codec || avcodec_open(video, codec) < 0) video = NULL;
-        else picture = avcodec_alloc_frame();
+        else {
+            picture = avcodec_alloc_frame();
+            go_modern_trace("PLAYER video codec=%d size=%dx%d fast=%d lowres=%d",
+                            video->codec_id, video->width, video->height,
+                            !!(video->flags2 & CODEC_FLAG2_FAST), video->lowres);
+        }
     }
     if (audio_stream >= 0) {
         audio = format->streams[audio_stream]->codec;
@@ -538,6 +568,9 @@ int go_player_start_file(const char *path)
 
 void go_player_stop(void)
 {
+    go_modern_trace("PLAYER stop frames=%d time=%d duration=%d",
+                    player_frames_decoded, player_time_value,
+                    player_duration_value);
     player_cancel = 1;
     player_pause = 0;
 }

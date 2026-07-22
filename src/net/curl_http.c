@@ -12,6 +12,11 @@
 #define CA_FILE "ms0:/PSP/GAME/GoTube/cacert.pem"
 #define BODY_LIMIT (512 * 1024)
 #define RING_SIZE (512 * 1024)
+/* MOV alternates between audio and video chunks behind the furthest position
+ * it has inspected.  Preserve half the ring as backward seek history; using
+ * every consumed byte immediately for read-ahead caused a TLS Range restart
+ * for almost every audio/video turn once playback was correctly paced. */
+#define SEEK_HISTORY (256 * 1024)
 
 typedef struct {
     char *data;
@@ -248,7 +253,8 @@ static size_t stream_write(char *ptr, size_t size, size_t count, void *opaque)
     int total = size * count, copied = 0;
     while (copied < total && !stream->cancel) {
         long long span = stream->data_end - stream->data_start;
-        long long discardable = stream->position - stream->data_start;
+        long long discardable = stream->position - stream->data_start -
+                                SEEK_HISTORY;
         int free_bytes, write_pos;
         int chunk;
         if (span >= RING_SIZE && discardable > 0) {
@@ -321,7 +327,10 @@ static int stream_start(CurlStream *stream, long long offset)
     stream->position = offset;
     stream->done = stream->cancel = stream->error = 0;
     stream->thread = sceKernelCreateThread("GoTube.curl", stream_thread,
-                      0x24, 0x20000, PSP_THREAD_ATTR_USER, NULL);
+                      /* Keep TLS receive ahead of the decoder.  At the old
+                       * 0x24 priority, sustained H.264 work could starve the
+                       * producer until the demuxer hit an empty ring. */
+                      0x20, 0x20000, PSP_THREAD_ATTR_USER, NULL);
     if (stream->thread < 0 ||
         sceKernelStartThread(stream->thread, sizeof(stream), &stream) < 0) {
         if (stream->thread >= 0) sceKernelDeleteThread(stream->thread);

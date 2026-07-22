@@ -42,11 +42,19 @@ int   go_callgate_video_url(JSContext *cx, const char *url_expr,
                             char *out, int outsz);
 int   go_http_download(const char *url, const char *path,
                        volatile int *progress, volatile int *cancel);
+char *go_curl_post_json(const char *url, const char *json,
+                        const char *visitor, int *size);
+void *go_curl_stream_open(const char *url);
+int go_curl_stream_read(void *stream, unsigned char *buffer, int size);
+void go_curl_stream_close(void *stream);
+int go_curl_download(const char *url, const char *path,
+                     volatile int *progress, volatile int *cancel);
 void *go_http_stream_open(const char *url);
 int go_http_stream_read(void *stream, unsigned char *buffer, int size);
 void go_http_stream_close(void *stream);
 void go_message_dialog(const char *message);
 int go_utility_button_swap(void);
+int ensure_network(void);
 
 /* --- GUI state --- */
 #define MAX_SITES 64
@@ -122,6 +130,9 @@ int go_source_is_onsen(void);
 int go_source_load(int page);
 int go_onsen_search(const char *keyword);
 int go_onsen_resolve(const char *url, char *out, int out_size);
+int go_modern_is_source(void);
+int go_modern_search(const char *keyword, int page);
+int go_modern_resolve(const char *url, char *out, int out_size);
 int go_source_enter(const GTVideo *video);
 int go_source_parent(void);
 int go_local_rename(const GTVideo *video, const char *filename);
@@ -129,7 +140,7 @@ int go_local_delete(const GTVideo *video);
 extern int g_osk_mode; /* 0 search, 1 direct URL, 2 save filename, 3 rename */
 
 /* --- resolved video URL for the player screen --- */
-extern char g_video_url[512];
+extern char g_video_url[2048];
 
 /* --- shared JS context (owned by main.c, used by input/search) --- */
 extern JSContext *g_cx;

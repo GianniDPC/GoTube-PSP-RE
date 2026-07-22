@@ -106,13 +106,21 @@ static int parse_url(const char *url, char *host, int host_sz,
     return 0;
 }
 
-typedef struct { int tmpl, conn, req; } GTHttpStream;
+typedef struct { int tmpl, conn, req, modern; void *modern_stream; } GTHttpStream;
 
 void *go_http_stream_open(const char *url)
 {
     char host[256], path[1024];
     int port, status = 0;
     GTHttpStream *stream;
+    if (url && strncmp(url, "https://", 8) == 0) {
+        stream = calloc(1, sizeof(*stream));
+        if (!stream) return NULL;
+        stream->modern = 1;
+        stream->modern_stream = go_curl_stream_open(url);
+        if (!stream->modern_stream) { free(stream); return NULL; }
+        return stream;
+    }
     if (!url || parse_url(url, host, sizeof(host), &port, path, sizeof(path)) < 0 ||
         ensure_network() < 0 || ensure_http() < 0) return NULL;
     stream = calloc(1, sizeof(*stream));
@@ -144,7 +152,10 @@ fail:
 int go_http_stream_read(void *opaque, unsigned char *buffer, int size)
 {
     GTHttpStream *stream = opaque;
-    if (!stream || stream->req < 0 || !buffer || size < 1) return -1;
+    if (!stream || !buffer || size < 1) return -1;
+    if (stream->modern)
+        return go_curl_stream_read(stream->modern_stream, buffer, size);
+    if (stream->req < 0) return -1;
     return sceHttpReadData(stream->req, buffer, size);
 }
 
@@ -152,6 +163,11 @@ void go_http_stream_close(void *opaque)
 {
     GTHttpStream *stream = opaque;
     if (!stream) return;
+    if (stream->modern) {
+        go_curl_stream_close(stream->modern_stream);
+        free(stream);
+        return;
+    }
     if (stream->req >= 0) sceHttpDeleteRequest(stream->req);
     if (stream->conn >= 0) sceHttpDeleteConnection(stream->conn);
     if (stream->tmpl >= 0) sceHttpDeleteTemplate(stream->tmpl);
@@ -166,6 +182,8 @@ int go_http_download(const char *url, const char *path,
     int got, status = 0, total = 0;
     SceULong64 length = 0;
 
+    if (url && strncmp(url, "https://", 8) == 0)
+        return go_curl_download(url, path, progress, cancel);
     if (!url || !path || parse_url(url, host, sizeof(host), &port,
                                     request_path, sizeof(request_path)) < 0)
         return -1;

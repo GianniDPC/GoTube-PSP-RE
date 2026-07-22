@@ -7,7 +7,7 @@ OBJS = \
 	src/bridge/register.o src/bridge/callgate.o src/js/eval.o \
 	src/gui/gui.o src/gui/menu.o src/gui/thumbnail.o src/gui/osk.o src/gui/netconf.o src/gui/splash.o \
 	src/natives/http.o src/natives/psptube.o \
-	src/media/audio.o src/media/player.o src/media/comments.o src/media/save.o src/media/local.o src/net/net.o \
+	src/media/audio.o src/media/player.o src/media/comments.o src/media/save.o src/media/local.o src/media/modern.o src/net/net.o src/net/curl_http.o \
 	src/video/video.o src/video/dvemgr.o
 
 INCDIR = vendor/intrafont-0.22 vendor/intrafont-0.31 vendor/faad include lib/include third_party/ffmpeg \
@@ -19,7 +19,8 @@ ASFLAGS = $(CFLAGS)
 
 LIBDIR = lib third_party/ffmpeg/libavformat third_party/ffmpeg/libavcodec \
 	third_party/ffmpeg/libavutil vendor/faad/lib
-LIBS = -lspidermonkey -lavformat -lavcodec -lfaad -lavutil -ljpeg -lz -lm -lc -lcglue \
+LIBS = -lspidermonkey -lavformat -lavcodec -lfaad -lavutil -ljpeg -lcurl \
+	-lmbedtls -lmbedx509 -lmbedcrypto -lz -lm -lc -lcglue -lpthreadglue -lpthread -lpsprtc \
 	-lpspgum -lpspgu -lpspdisplay -lpspctrl -lpsppower \
 	-lpsputility -lpsphttp -lpspssl -lpspnet -lpspnet_inet \
 	-lpspnet_apctl -lpspnet_resolver -lpspwlan -lpsphprm -lpspkubridge -lpspsdk -lpspaudio
@@ -44,5 +45,6 @@ historical-package: EBOOT.PBP
 	cp runtime/site/ext.js release/GoTube/site/ext.js
 	cp runtime/site/YouTube.js release/GoTube/site/YouTube.js
 	cp runtime/update.js release/GoTube/update.js
+	cp runtime/cacert.pem release/GoTube/cacert.pem
 	cp runtime/dvemgr.prx release/GoTube/dvemgr.prx
 	cp runtime/mediaengine.prx release/GoTube/mediaengine.prx

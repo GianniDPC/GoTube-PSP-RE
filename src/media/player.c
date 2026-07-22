@@ -28,7 +28,7 @@ static volatile int player_progress_value = 0;
 static volatile int player_cancel = 0;
 static volatile int player_pause = 0;
 static SceUID player_thread = -1;
-static char player_url[1024];
+static char player_url[2048];
 static char player_source_url[512];
 static int player_local_file = 0;
 static int player_frames_decoded = 0;
@@ -269,15 +269,17 @@ static int decode_file(const char *path, int remote)
 
     av_register_all();
     if (remote) {
-        AVInputFormat *flv = av_find_input_format("flv");
-        stream_format = flv;
+        AVInputFormat *input = strstr(path, "itag=18") ?
+            av_find_input_format("mov,mp4,m4a,3gp,3g2,mj2") :
+            av_find_input_format("flv");
+        stream_format = input;
         http_stream = go_http_stream_open(path);
         io_buffer = av_malloc(32768);
-        if (!http_stream || !io_buffer || !flv) goto fail;
+        if (!http_stream || !io_buffer || !input) goto fail;
         init_put_byte(&io, io_buffer, 32768, 0, http_stream,
                       stream_read_packet, NULL, NULL);
         io.is_streamed = 1;
-        if (av_open_input_stream(&format, &io, path, flv, NULL) < 0) goto fail;
+        if (av_open_input_stream(&format, &io, path, input, NULL) < 0) goto fail;
     } else if (av_open_input_file(&format, path, NULL, 0, NULL) < 0) goto fail;
     if (av_find_stream_info(format) < 0) goto fail;
     if (format->duration > 0)

@@ -47,6 +47,8 @@ void go_callgate_sitelist(JSContext *cx)
     strcpy(g_site_search_desc[g_site_count++], "");
     strcpy(g_site_names[g_site_count], "Onsen");
     strcpy(g_site_search_desc[g_site_count++], "\xe9\x9f\xb3\xe6\xb3\x89(Onsen)");
+    strcpy(g_site_names[g_site_count], "YouTube");
+    strcpy(g_site_search_desc[g_site_count++], "YouTube");
     if (!cx) return;
 
     /* CallGate_GetSiteList() is defined in site.js and returns SiteList[] */
@@ -59,7 +61,7 @@ void go_callgate_sitelist(JSContext *cx)
     arr = JSVAL_TO_OBJECT(rval);
     if (!JS_GetArrayLength(cx, arr, &len)) return;
 
-    if (len > MAX_SITES - 3) len = MAX_SITES - 3;
+    if (len > MAX_SITES - 4) len = MAX_SITES - 4;
 
     for (i = 0; i < len; i++) {
         jsval val;
@@ -68,6 +70,8 @@ void go_callgate_sitelist(JSContext *cx)
                            g_site_names[g_site_count], 1024);
             extract_string(cx, JSVAL_TO_OBJECT(val), "SearchDesc",
                            g_site_search_desc[g_site_count], 128);
+            if (strcmp(g_site_names[g_site_count], "YouTube") == 0)
+                g_site_names[g_site_count][0] = 0;
             if (g_site_names[g_site_count][0])
                 g_site_count++;
         }
@@ -85,7 +89,7 @@ char     g_search_keyword[128] = "";
 GTScreen g_screen = SCR_SITELIST;
 GTScreen g_menu_return_screen = SCR_RESULTS;
 int      g_menu_sel = 0;
-char     g_video_url[512] = "";
+char     g_video_url[2048] = "";
 
 /* Extract a string property from a JS object into a C buffer */
 static void prop_str(JSContext *cx, JSObject *obj, const char *name,

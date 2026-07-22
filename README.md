@@ -7,6 +7,11 @@ the reconstructed implementation readable and buildable.
 This is an independent preservation project and is not affiliated with Sony or
 the original GoTube authors.
 
+The `main` branch is the preservation-focused GoTube 1.2 reconstruction. The
+`modern-youtube` branch keeps that interface while adding a standalone modern
+YouTube provider. It runs entirely on the PSP: no PC, phone, proxy, bridge, or
+user authentication is required.
+
 ## Current functionality
 
 - Original-style provider, results, menu, multiview and player interfaces
@@ -15,6 +20,26 @@ the original GoTube authors.
 - JavaScript site-provider bridge and HTTP access
 - Local and streamed MP4 playback with H.264 video and AAC audio
 - Playback controls, comments, progress display, thumbnails and video output
+
+## Modern YouTube branch
+
+The modern provider deliberately does not use the historical provider
+JavaScript. It uses native C and a PSP build of libcurl with mbedTLS to make
+TLS 1.2 Innertube requests. Search results are parsed under a 512 KiB response
+cap and thumbnails are downloaded over the same verified TLS transport.
+
+Playback requests use YouTube's JS-less Android VR client and select only
+progressive itag 18: one MP4 stream containing 360p H.264 Baseline video and
+AAC-LC audio. The PSP does not attempt to merge DASH tracks or decode AV1,
+VP9, Opus, high-profile H.264, or resolutions beyond its practical limits.
+The MP4 is consumed sequentially with a 256 KiB ring buffer, so the full video
+is neither stored in RAM nor downloaded before playback.
+
+This compatibility route cannot make every YouTube item playable. Live, DRM,
+age/account restricted, made-for-kids client-restricted, and videos without a
+progressive itag 18 are reported as unsupported. YouTube can change its
+private Innertube behavior; client constants are intentionally isolated in
+[`src/media/modern.c`](src/media/modern.c).
 
 Real PSP hardware is the reference test platform. PPSSPP is useful for many
 code paths but does not reproduce every homebrew graphics/media behavior.

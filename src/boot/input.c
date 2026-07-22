@@ -29,6 +29,11 @@ static int start_video(const GTVideo *video)
         if (go_onsen_resolve(video->url,g_video_url,sizeof(g_video_url))<0) return -1;
         return go_player_start(g_video_url);
     }
+    if (strncmp(video->url, "yt:", 3) == 0) {
+        if (go_modern_resolve(video->url, g_video_url,
+                              sizeof(g_video_url)) < 0) return -1;
+        return go_player_start(g_video_url);
+    }
     if (go_callgate_video_url(g_cx, video->url, g_video_url,
                               sizeof(g_video_url)) < 0) return -1;
     return go_player_start(g_video_url);
@@ -58,6 +63,8 @@ static void search_page(int page)
         g_result_count = go_source_load(page);
     else if (go_source_is_onsen())
         g_result_count = go_onsen_search(g_search_keyword);
+    else if (go_modern_is_source())
+        g_result_count = go_modern_search(g_search_keyword, page);
     else
         g_result_count = go_callgate_search(g_cx, g_site_names[g_site_sel],
                                             g_search_keyword, page);

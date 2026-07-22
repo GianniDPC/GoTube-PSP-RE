@@ -6,7 +6,7 @@
 #include "cp932_reverse.inc"
 
 static GTVideo pending_video;
-static char save_url[512];
+static char save_url[2048];
 static char save_thumb[512];
 static char save_path[512];
 static char save_thumb_path[520];
@@ -142,9 +142,11 @@ int go_save_start(JSContext *cx, const char *filename)
     if (go_filename_sanitize(filename, clean, sizeof(clean)) < 0) {
         return -1;
     }
-    if (go_callgate_video_url(cx, pending_video.url, save_url, sizeof(save_url)) < 0) {
-        return -1;
-    }
+    if (strncmp(pending_video.url, "yt:", 3) == 0) {
+        if (go_modern_resolve(pending_video.url, save_url, sizeof(save_url)) < 0)
+            return -1;
+    } else if (go_callgate_video_url(cx, pending_video.url, save_url,
+                                     sizeof(save_url)) < 0) return -1;
     strncpy(save_thumb, pending_video.thumb, sizeof(save_thumb) - 1);
     save_thumb[sizeof(save_thumb) - 1] = 0;
     if (strncmp(g_favorites, "ms0:", 4) == 0)

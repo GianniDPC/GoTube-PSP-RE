@@ -3,7 +3,7 @@ TARGET = GoTube
 
 OBJS = \
 	vendor/intrafont-0.22/intraFont.o vendor/intrafont-0.31/libccc.o \
-	src/boot/main.o src/boot/callbacks.o src/boot/input.o src/boot/trace.o \
+	src/boot/main.o src/boot/callbacks.o src/boot/input.o \
 	src/bridge/register.o src/bridge/callgate.o src/js/eval.o \
 	src/gui/gui.o src/gui/menu.o src/gui/thumbnail.o src/gui/osk.o src/gui/netconf.o src/gui/splash.o \
 	src/natives/http.o src/natives/psptube.o \
@@ -13,8 +13,7 @@ OBJS = \
 INCDIR = vendor/intrafont-0.22 vendor/intrafont-0.31 vendor/faad include lib/include third_party/ffmpeg \
 	third_party/ffmpeg/libavcodec third_party/ffmpeg/libavformat \
 	third_party/ffmpeg/libavutil
-CFLAGS = -O2 -G0 -Wall -Wextra -Wno-unused-parameter -DXP_UNIX \
-	$(GT_TEST_CFLAGS) $(if $(GT_TEST_CFLAGS),-DGT_ENABLE_TRACE,)
+CFLAGS = -O2 -G0 -Wall -Wextra -Wno-unused-parameter -DXP_UNIX
 CXXFLAGS = $(CFLAGS) -fno-exceptions -fno-rtti
 ASFLAGS = $(CFLAGS)
 

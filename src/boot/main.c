@@ -42,16 +42,13 @@ static JSClass global_class = {
     JSCLASS_NO_OPTIONAL_MEMBERS
 };
 
-/* --- JS error reporter: routes errors/exceptions to the trace log --- */
+/* The native application handles provider errors through its UI/state paths. */
 static void go_error_reporter(JSContext *cx, const char *message,
                               JSErrorReport *report)
 {
     (void)cx;
-    if (message) gt_trace(message);
-    if (report) {
-        if (report->filename) gt_trace(report->filename);
-        if (report->lineno)   gt_trace_ptr("line", (void *)(long)report->lineno);
-    }
+    (void)message;
+    (void)report;
 }
 
 /* --- Paths on Memory Stick --- */
@@ -89,20 +86,16 @@ int user_main(SceSize args, void *argp)
     int       js_count = 0;
     int       i, ret;
 
-    gt_trace("user_main start");
 
     /* 1. Overclock to max */
     scePowerSetClockFrequency(333, 333, 166);
-    gt_trace("power ok");
 
     /* 2. Hardware init */
     sceCtrlSetSamplingCycle(0);
     sceCtrlSetSamplingMode(PSP_CTRL_MODE_ANALOG);
-    gt_trace("ctrl ok");
 
     /* 3. JS runtime: 512KB (0x80000 matches decompiled) */
     g_rt = JS_NewRuntime(0x80000);
-    gt_trace_ptr("runtime", g_rt);
     if (!g_rt) {
         pspDebugScreenInit();
         pspDebugScreenPrintf("JavaScript Init error.\n");
@@ -111,7 +104,6 @@ int user_main(SceSize args, void *argp)
     }
 
     g_cx = JS_NewContext(g_rt, 0x2000);
-    gt_trace_ptr("context", g_cx);
     if (!g_cx) {
         JS_DestroyRuntime(g_rt);
         sceKernelExitGame();
@@ -132,24 +124,15 @@ int user_main(SceSize args, void *argp)
         JS_SetGlobalObject(g_cx, glob);
         {
             JSBool sok = JS_InitStandardClasses(g_cx, glob);
-            gt_trace_ptr("stdclasses", (void *)(long)sok);
             if (!sok) {
-                jsval exc;
-                if (JS_GetPendingException(g_cx, &exc)) {
-                    JSString *es = JS_ValueToString(g_cx, exc);
-                    if (es) gt_trace(JS_GetStringBytes(es));
+                if (JS_IsExceptionPending(g_cx))
                     JS_ClearPendingException(g_cx);
-                } else {
-                    gt_trace("(stdclass fail, no exc)");
-                }
             }
         }
-        gt_trace("global obj done");
     }
 
     /* 4. Register JS natives */
     ret = register_js_natives(g_cx);
-    gt_trace("natives done");
     if (ret < 0) {
         JS_DestroyContext(g_cx);
         JS_DestroyRuntime(g_rt);
@@ -157,7 +140,6 @@ int user_main(SceSize args, void *argp)
         return 1;
     }
     /* 5. Scan site/ directory for .js site plugins (skip cfg.js, site.js) */
-    gt_trace("opening site dir");
     dir_fd = sceIoDopen(SITE_DIR);
     if (dir_fd < 0) {
         pspDebugScreenInit();
@@ -172,7 +154,6 @@ int user_main(SceSize args, void *argp)
     while (sceIoDread(dir_fd, &entry) > 0) {
         size_t len = strlen(entry.d_name);
         char   e0, e1, e2;
-        gt_trace(entry.d_name);
         if ((entry.d_stat.st_attr & 0x1000)) { memset(&entry,0,sizeof(entry)); continue; }
         if (len < 3) { memset(&entry,0,sizeof(entry)); continue; }
 
@@ -194,19 +175,13 @@ int user_main(SceSize args, void *argp)
         memset(&entry, 0, sizeof(entry));   /* re-zero for next read */
     }
     sceIoDclose(dir_fd);
-    gt_trace("scan done");
-    gt_trace_ptr("js_count", (void *)(long)js_count);
 
     /* Sort alphabetically (matches binary qsort) */
     if (js_count > 1)
         qsort(js_files, js_count, sizeof(char *), js_cmp);
-    gt_trace("qsort done");
 
     /* 6a. Evaluate cfg.js (always first) */
-    gt_trace("eval cfg.js");
     ret = go_evaluate_script(g_cx, CFG_FILE);
-    gt_trace_ptr("cfg ret", (void *)(long)ret);
-    gt_trace("cfg done");
     if (ret < 0) {
         pspDebugScreenInit();
         pspDebugScreenPrintf("JavaScript Load error %s\n", CFG_FILE);
@@ -217,10 +192,8 @@ int user_main(SceSize args, void *argp)
 
     /* 6b. Evaluate each site plugin */
     for (i = 0; i < js_count; i++) {
-        gt_trace(js_files[i]);
         ret = go_evaluate_script(g_cx, js_files[i]);
         if (ret < 0) {
-            gt_trace("plugin FAILED");
             pspDebugScreenInit();
             pspDebugScreenPrintf("JavaScript Load error %s\n", js_files[i]);
             sceKernelExitGame();
@@ -228,12 +201,9 @@ int user_main(SceSize args, void *argp)
         }
         free(js_files[i]);
     }
-    gt_trace("plugins done");
 
     /* 6c. Evaluate site.js (always last) */
-    gt_trace("eval site.js");
     ret = go_evaluate_script(g_cx, SITE_FILE);
-    gt_trace("site done");
     if (ret < 0) {
         pspDebugScreenInit();
         pspDebugScreenPrintf("JavaScript Load error %s\n", SITE_FILE);
@@ -242,9 +212,7 @@ int user_main(SceSize args, void *argp)
     }
 
     /* 7. CallGate_GetSiteList */
-    gt_trace("callgate");
     go_callgate_sitelist(g_cx);
-    gt_trace("callgate done");
 
     /* FUN_0001e05c selects native descriptor zero (Favorites) before the
      * first main-state descriptor is installed.  Its literal "PSP" query is
@@ -259,141 +227,6 @@ int user_main(SceSize args, void *argp)
     go_splash_init();  /* boot splash (firmware, hardware detection, credit) */
     setup_callbacks();
 
-#ifdef GT_PLAYER_SELFTEST
-    /* Test-only build: bypass dead historical services and exercise the
-     * PSP decoder/render/audio path against a deterministic local fixture. */
-    go_player_start_file("ms0:/PSP/GAME/GoTube/player-selftest.flv");
-    go_splash_skip();
-    g_screen = SCR_PLAYER;
-    gt_trace_ptr("comment count", (void *)(long)go_comments_count());
-#endif
-#ifdef GT_STREAM_SELFTEST
-    go_player_start("http://127.0.0.1:18080/player-selftest.flv");
-    go_splash_skip();
-    g_screen = SCR_PLAYER;
-#endif
-#ifdef GT_SAVE_SELFTEST
-    {
-        GTVideo fixture;
-        char initial[64];
-        memset(&fixture, 0, sizeof(fixture));
-        strcpy(fixture.url, "\"http://127.0.0.1:18080/player-selftest.flv\"");
-        strcpy(fixture.thumb, "http://127.0.0.1:18080/thumbnail-selftest.jpg");
-        strcpy(fixture.save_filename, "保存:試験.flv");
-        if (go_save_prepare(&fixture, initial, sizeof(initial)) == 0)
-            gt_trace_ptr("save selftest start", (void *)(long)go_save_start(g_cx, initial));
-        go_splash_skip();
-        g_screen = SCR_RESULTS;
-    }
-#endif
-#ifdef GT_LOCAL_SELFTEST
-    {
-        int site, item;
-        for (site = 0; site < g_site_count; site++)
-            if (strcmp(g_site_names[site], "Favorites") == 0) break;
-        if (site < g_site_count) {
-            g_site_sel = site;
-            gt_trace_ptr("favorites load", (void *)(long)go_source_load(1));
-            for (item = 0; item < g_result_count; item++)
-                if (g_results[item].local_kind == 2 &&
-                    strcmp(g_results[item].title, "PSP") == 0) break;
-            if (item < g_result_count) {
-                gt_trace_ptr("favorites enter dir", (void *)(long)
-                    go_source_enter(&g_results[item]));
-                gt_trace_ptr("favorites parent", (void *)(long)
-                    go_source_parent());
-            }
-            for (item = 0; item < g_result_count; item++)
-                if (strcmp(g_results[item].title, "favorite-selftest.flv") == 0) break;
-            if (item < g_result_count) {
-                gt_trace_ptr("favorites rename", (void *)(long)
-                    go_local_rename(&g_results[item], "favorite-renamed.flv"));
-                for (item = 0; item < g_result_count; item++)
-                    if (strcmp(g_results[item].title, "favorite-renamed.flv") == 0) break;
-                if (item < g_result_count)
-                    gt_trace_ptr("favorites delete", (void *)(long)
-                        go_local_delete(&g_results[item]));
-            }
-        }
-        go_splash_skip();
-        g_screen = SCR_RESULTS;
-    }
-#endif
-#ifdef GT_CONTROL_SELFTEST
-    {
-        int i;
-        GTVideo a, b, stepped;
-        memset(&a, 0, sizeof(a)); memset(&b, 0, sizeof(b));
-        strcpy(a.url, "control-a"); strcpy(b.url, "control-b");
-        go_playlist_add(&a); go_playlist_add(&b); go_playlist_first(&stepped);
-        go_playlist_step(1, &stepped);
-        gt_trace(stepped.url);
-        go_playlist_step(1, &stepped);
-        gt_trace(stepped.url);
-        for (i = 0; i < 5; i++) go_player_cycle_overlay();
-        gt_trace_ptr("overlay cycle", (void *)(long)go_player_overlay_mode());
-        for (i = 0; i < 15; i++) go_player_cycle_render_mode();
-        gt_trace_ptr("render cycle", (void *)(long)go_player_render_mode());
-        memset(&g_results[0], 0, sizeof(g_results[0]));
-        strcpy(g_results[0].tags, "alpha  beta\tgamma");
-        g_results[0].attr = 1;
-        g_result_count = 1; g_result_sel = 0;
-        go_menu_build();
-        gt_trace_ptr("menu count", (void *)(long)g_menu_count);
-        for (i = 0; i < g_menu_count; i++) {
-            gt_trace_ptr(g_menu_labels[i], (void *)(long)g_menu_actions[i]);
-        }
-        go_splash_skip();
-        g_screen = SCR_RESULTS;
-    }
-#endif
-#ifdef GT_ASHX_SELFTEST
-    {
-        int site, item;
-        for (site = 0; site < g_site_count; site++)
-            if (strcmp(g_site_names[site], "Favorites") == 0) break;
-        if (site < g_site_count) {
-            g_site_sel = site; go_source_load(1);
-            for (item = 0; item < g_result_count; item++)
-                if (g_results[item].local_kind == 3) break;
-            if (item < g_result_count) {
-                gt_trace(g_results[item].title);
-                gt_trace_ptr("ashx children", (void *)(long)go_source_enter(&g_results[item]));
-                if (g_result_count > 1) {
-                    gt_trace(g_results[0].title); gt_trace(g_results[0].url);
-                    gt_trace(g_results[1].title); gt_trace(g_results[1].url);
-                }
-            }
-        }
-        go_splash_skip(); g_screen = SCR_RESULTS;
-    }
-#endif
-#ifdef GT_TV_SELFTEST
-    go_gui_set_output(1);
-    gt_trace_ptr("tv component width", (void *)(long)go_gui_width());
-    gt_trace_ptr("tv component height", (void *)(long)go_gui_height());
-    go_gui_set_output(2);
-    gt_trace_ptr("tv composite x", (void *)(long)go_gui_origin_x());
-    go_gui_set_output(0);
-    gt_trace_ptr("tv lcd width", (void *)(long)go_gui_width());
-    go_splash_skip(); g_screen = SCR_RESULTS;
-#endif
-#ifdef GT_CALLGATE_SELFTEST
-    {
-        int count = go_callgate_search(g_cx, "Fixture", "query", 2);
-        gt_trace_ptr("callgate count", (void *)(long)count);
-        gt_trace_ptr("callgate total", (void *)(long)g_result_total);
-        gt_trace_ptr("callgate start", (void *)(long)g_result_start);
-        gt_trace_ptr("callgate end", (void *)(long)g_result_end);
-        if (count > 0) {
-            gt_trace(g_results[0].title);
-            gt_trace_ptr("callgate length", (void *)(long)g_results[0].length);
-            gt_trace_ptr("callgate views", (void *)(long)g_results[0].views);
-            gt_trace_ptr("callgate comments", (void *)(long)g_results[0].comments);
-        }
-        go_splash_skip(); g_screen = SCR_RESULTS;
-    }
-#endif
 
     /* 9. MAIN LOOP */
     for (;;) {
@@ -411,8 +244,8 @@ int user_main(SceSize args, void *argp)
             /* FUN_000278e0 sends WLAN-off directly to the main descriptor;
              * only state 1 enters the connection utility. */
             if (sceWlanGetSwitchState() != 0) {
-                if (ensure_network() < 0 || go_netconf_open() < 0)
-                    gt_trace("network configuration init error");
+                if (ensure_network() >= 0)
+                    (void)go_netconf_open();
             }
         }
         go_gui_render();

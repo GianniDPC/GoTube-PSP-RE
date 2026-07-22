@@ -141,65 +141,6 @@ static void packet_queue_destroy(PlayerPacketQueue *q)
     q->lock = -1;
 }
 
-#ifdef GT_VIDEO_HW_DEBUG
-static int video_debug_dumped;
-static void video_debug_avlog(void *opaque, int level, const char *fmt, va_list args)
-{
-    char line[240];
-    (void)opaque;
-    if (level > AV_LOG_WARNING) return;
-    vsnprintf(line, sizeof(line), fmt, args);
-    gt_trace(line);
-}
-static void dump_video_debug_frame(int slot, int width, int height,
-                                   int y_stride, int uv_stride)
-{
-    int row, col, y_min = 255, y_max = 0, u_min = 255, u_max = 0;
-    int v_min = 255, v_max = 0;
-    char report[512];
-    SceUID fd;
-    for (row = 0; row < height; row += 4)
-        for (col = 0; col < width; col += 4) {
-            int value = frame_y_ptr[row * y_stride + col];
-            if (value < y_min) y_min = value;
-            if (value > y_max) y_max = value;
-        }
-    for (row = 0; row < (height + 1) / 2; row += 2)
-        for (col = 0; col < (width + 1) / 2; col += 2) {
-            int u = frame_u_ptr[row * uv_stride + col];
-            int v = frame_v_ptr[row * uv_stride + col];
-            if (u < u_min) u_min = u;
-            if (u > u_max) u_max = u;
-            if (v < v_min) v_min = v;
-            if (v > v_max) v_max = v;
-        }
-    snprintf(report, sizeof(report),
-             "frame=%d width=%d height=%d y_stride=%d uv_stride=%d\r\n"
-             "Y=%d..%d U=%d..%d V=%d..%d\r\n",
-             player_frames_decoded + 1, width, height, y_stride, uv_stride,
-             y_min, y_max, u_min, u_max, v_min, v_max);
-    if (player_frames_decoded == 0 || player_frames_decoded == 1 ||
-        player_frames_decoded == 9 || player_frames_decoded == 29)
-        gt_trace(report);
-    /* Frame 1 can be a decoder-delay/neutral frame.  Save frame 30, after the
-     * first second of this 30 fps sample, using only three large writes.  The
-     * old row-at-a-time PPM writer stalled real hardware for ~84 seconds. */
-    if (player_frames_decoded != 29) return;
-    video_debug_dumped = 1;
-    fd = sceIoOpen("ms0:/gotube-video-debug.txt",
-                   PSP_O_WRONLY | PSP_O_CREAT | PSP_O_TRUNC, 0777);
-    if (fd >= 0) { sceIoWrite(fd, report, strlen(report)); sceIoClose(fd); }
-    fd = sceIoOpen("ms0:/gotube-video-y.raw",
-                   PSP_O_WRONLY | PSP_O_CREAT | PSP_O_TRUNC, 0777);
-    if (fd >= 0) { sceIoWrite(fd, frame_y_ptr, y_stride * height); sceIoClose(fd); }
-    fd = sceIoOpen("ms0:/gotube-video-v.raw",
-                   PSP_O_WRONLY | PSP_O_CREAT | PSP_O_TRUNC, 0777);
-    if (fd >= 0) { sceIoWrite(fd, frame_v_ptr, uv_stride * ((height + 1) / 2)); sceIoClose(fd); }
-    fd = sceIoOpen("ms0:/gotube-video-u.raw",
-                   PSP_O_WRONLY | PSP_O_CREAT | PSP_O_TRUNC, 0777);
-    if (fd >= 0) { sceIoWrite(fd, frame_u_ptr, uv_stride * ((height + 1) / 2)); sceIoClose(fd); }
-}
-#endif
 
 static void release_audio_src(void)
 {
@@ -229,14 +170,8 @@ static void publish_yuv420(const AVFrame *frame, int width, int height)
     frame_height = height;
     frame_y_stride = y_stride;
     frame_uv_stride = uv_stride;
-#ifdef GT_VIDEO_HW_DEBUG
-    if (!video_debug_dumped)
-        dump_video_debug_frame(0, width, height, y_stride, uv_stride);
-#endif
     frame_index = 0;
     player_frames_decoded++;
-    if (player_frames_decoded == 1)
-        gt_trace("player first frame");
 }
 
 static int stream_read_packet(void *opaque, uint8_t *buffer, int size)
@@ -251,7 +186,6 @@ static int video_decode_worker(SceSize args, void *argp)
     AVPacket packet;
     int64_t first_pts = (int64_t)AV_NOPTS_VALUE;
     uint64_t clock_start = 0;
-    int debug_packets = 0;
     (void)args;
     while (packet_queue_get(&pipeline->video_q, &packet) == 1) {
         int left = packet.size, got_picture = 0;
@@ -277,14 +211,6 @@ static int video_decode_worker(SceSize args, void *argp)
             used = avcodec_decode_video(pipeline->video, pipeline->picture,
                                         &got_picture, data, left);
             sceKernelSignalSema(pipeline->codec_lock, 1);
-#ifdef GT_VIDEO_HW_DEBUG
-            if (debug_packets < 12) {
-                char line[128];
-                snprintf(line, sizeof(line), "video packet=%d size=%d used=%d got=%d",
-                         debug_packets + 1, packet.size, used, got_picture);
-                gt_trace(line);
-            }
-#endif
             if (used <= 0) break;
             data += used;
             left -= used;
@@ -292,7 +218,6 @@ static int video_decode_worker(SceSize args, void *argp)
                 publish_yuv420(pipeline->picture, pipeline->video->width,
                                pipeline->video->height);
         }
-        debug_packets++;
         av_free_packet(&packet);
     }
     sceKernelExitThread(0);
@@ -343,10 +268,6 @@ static int decode_file(const char *path, int remote)
     pipeline.codec_lock = -1;
 
     av_register_all();
-#ifdef GT_VIDEO_HW_DEBUG
-    av_log_set_level(AV_LOG_DEBUG);
-    av_log_set_callback(video_debug_avlog);
-#endif
     if (remote) {
         AVInputFormat *flv = av_find_input_format("flv");
         stream_format = flv;
@@ -399,8 +320,6 @@ static int decode_file(const char *path, int remote)
         }
     }
     if (!video && !audio) goto fail;
-    gt_trace(video ? "player video decoder open" : "player no video");
-    gt_trace(audio ? "player audio decoder open" : "player no audio");
     pipeline.video = video;
     pipeline.audio = audio;
     pipeline.picture = picture;
@@ -524,9 +443,7 @@ static int player_worker(SceSize args, void *argp)
 {
     (void)args; (void)argp;
     player_status = 1;
-    gt_trace("player worker start");
     player_status = decode_file(player_url, !player_local_file) < 0 ? -2 : 3;
-    gt_trace(player_status == 3 ? "player decode complete" : "player decode error");
     sceKernelExitThread(0);
     return 0;
 }
@@ -550,9 +467,6 @@ int go_player_start(const char *url)
     player_frames_decoded = 0;
     player_time_value = 0;
     player_duration_value = 0;
-#ifdef GT_VIDEO_HW_DEBUG
-    video_debug_dumped = 0;
-#endif
     /* FUN_00021e54: original decoder worker priority 0x22, stack 0x40000,
      * attributes 0x80004000 (USER | VFPU).  H.264 Main decoding exceeds the
      * smaller reconstruction stack after its first delayed frame. */
@@ -592,11 +506,8 @@ int go_player_start_file(const char *path)
     player_frames_decoded = 0;
     player_time_value = 0;
     player_duration_value = 0;
-#ifdef GT_VIDEO_HW_DEBUG
-    video_debug_dumped = 0;
-#endif
     go_comments_load_for_media(path);
-    player_thread = sceKernelCreateThread("GoTube.player.test", player_worker,
+    player_thread = sceKernelCreateThread("GoTube.player", player_worker,
                                           0x22, 0x40000,
                                           PSP_THREAD_ATTR_USER | PSP_THREAD_ATTR_VFPU, NULL);
     if (player_thread < 0) return player_thread;

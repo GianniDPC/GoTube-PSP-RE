@@ -121,9 +121,10 @@ failed to expose `flash0:/font/jpn0.pgf` successfully to either build. This is
 consistent with PPSSPP being incomplete for some homebrew behavior; it is a
 test limitation, not evidence that the original binary is faulty.
 
-The normal historical release was smoke-tested separately after all test-only
-builds. It creates no `gt_trace.txt`; instrumentation is absent unless a
-`GT_TEST_CFLAGS` build is explicitly requested.
+The normal historical release was smoke-tested separately after the temporary
+instrumented validation builds. Those compile-time fixtures and the Memory
+Stick trace logger were removed from the public source after qualification.
+The release contains no diagnostic file writer.
 
 ## Claim boundary
 

@@ -6,20 +6,11 @@
  */
 #include "gotube.h"
 
-extern void gt_trace(const char *msg);
 
-/* Log the pending JS exception (if any) to the trace file */
-static void log_js_error(JSContext *cx, const char *path)
+static void clear_js_error(JSContext *cx)
 {
-    jsval exc;
-    gt_trace(path);
-    if (JS_GetPendingException(cx, &exc) && JSVAL_IS_STRING(exc)) {
-        char *msg = JS_GetStringBytes(JSVAL_TO_STRING(exc));
-        gt_trace(msg);
-    } else {
-        gt_trace("(js error, no exception string)");
-    }
-    JS_ClearPendingException(cx);
+    if (JS_IsExceptionPending(cx))
+        JS_ClearPendingException(cx);
 }
 
 int go_evaluate_script(JSContext *cx, const char *path)
@@ -63,7 +54,7 @@ int go_evaluate_script(JSContext *cx, const char *path)
                            buf, (uintN)size, path, 1, &rval);
 
     if (!ok)
-        log_js_error(cx, path);
+        clear_js_error(cx);
 
     free(buf);
     return ok ? 0 : -1;

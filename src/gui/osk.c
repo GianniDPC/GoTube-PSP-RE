@@ -96,7 +96,6 @@ int go_osk_open(const char *desc, const char *initial)
 
     {
         int ret = sceUtilityOskInitStart(&g_osk_params);
-        gt_trace_ptr("osk_init_ret", (void *)(long)ret);
         if (ret < 0)
             return -1;
     }
@@ -117,16 +116,6 @@ int go_osk_update(void)
 
     sceUtilityOskUpdate(1);
     status = sceUtilityOskGetStatus();
-
-    /* Trace the OSK dialog status so the user can report what happens
-     * on real hardware: 0=NONE, 1=INIT, 2=VISIBLE, 3=QUIT, 4=FINISHED */
-    {
-        static int last_status = -1;
-        if (status != last_status) {
-            gt_trace_ptr("osk_status", (void *)(long)status);
-            last_status = status;
-        }
-    }
 
     if (status == PSP_UTILITY_DIALOG_QUIT) {
         /* User confirmed — OSK is transitioning out. Start shutdown,

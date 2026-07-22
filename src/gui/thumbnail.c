@@ -143,14 +143,6 @@ void go_thumbnails_init(void)
                                          0x28, 0x10000,
                                          PSP_THREAD_ATTR_USER, NULL);
     if (thumb_thread >= 0) sceKernelStartThread(thumb_thread, 0, NULL);
-#ifdef GT_THUMB_SELFTEST
-    if (decode_jpeg("ms0:/PSP/GAME/GoTube/thumbnail-selftest.jpg", &slots[0]) == 0) {
-        slots[0].state = 3;
-        gt_trace("thumbnail decode complete");
-    } else {
-        gt_trace("thumbnail decode error");
-    }
-#endif
 }
 
 void go_thumbnails_reset(void)

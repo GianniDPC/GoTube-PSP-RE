@@ -24,7 +24,6 @@
 #include <jsapi.h>
 #include <string.h>
 
-extern void gt_trace(const char *msg);
 extern void go_player_set_render_mode(int mode);
 
 char g_favorites[256] = "";
@@ -147,16 +146,13 @@ int register_js_natives(JSContext *cx)
     JS_DefineFunction(cx, global, "GetContents",  go_getcontents,  1, 0);
     JS_DefineFunction(cx, global, "PostContents", go_postcontents, 2, 0);
     JS_DefineFunction(cx, global, "alert",        go_alert,        1, 0);
-    gt_trace("globals done");
 
     /* FUN_0001bdd4 calls the SpiderMonkey JS_DefineObject-shaped helper with
      * public name PSPTube, internal class ClassPSPTube, null prototype and
      * permanent (4) attributes.  PSPTube is an object, not a constructor. */
     psptube = JS_DefineObject(cx, global, "PSPTube", &psptube_class,
                               NULL, JSPROP_PERMANENT);
-    gt_trace("define object done");
     if (!psptube) {
-        gt_trace("define object FAILED");
         return -1;
     }
 

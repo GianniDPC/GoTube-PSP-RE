@@ -16,7 +16,6 @@ int go_video_output_poll(void)
     if (state < 0) return cable_state;
     if (state != cable_state) {
         cable_state = state;
-        gt_trace_ptr("video cable", (void *)(long)state);
     }
     return cable_state;
 }

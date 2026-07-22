@@ -52,7 +52,6 @@ void go_callgate_sitelist(JSContext *cx)
     /* CallGate_GetSiteList() is defined in site.js and returns SiteList[] */
     if (!JS_CallFunctionName(cx, JS_GetGlobalObject(cx),
                              "CallGate_GetSiteList", 0, NULL, &rval)) {
-        gt_trace("CallGate_GetSiteList eval failed");
         return;
     }
 
@@ -155,19 +154,13 @@ int go_callgate_search(JSContext *cx, const char *site,
 
     if (!JS_CallFunctionName(cx, JS_GetGlobalObject(cx),
                              "CallGate_SearchSite", 5, argv, &rval)) {
-        /* Dump + clear the JS exception (e.g. site unreachable → GetContents
-         * returned null and the scraper threw). Return 0 results gracefully. */
-        jsval exc;
-        if (JS_GetPendingException(cx, &exc)) {
-            JSString *es = JS_ValueToString(cx, exc);
-            if (es) gt_trace(JS_GetStringBytes(es));
+        /* A provider may throw when a historical endpoint is unavailable.
+         * Clear the exception and expose an empty result set. */
+        if (JS_IsExceptionPending(cx))
             JS_ClearPendingException(cx);
-        }
-        gt_trace("search eval failed (returning 0 results)");
         return 0;
     }
     if (!JSVAL_IS_OBJECT(rval)) {
-        gt_trace("search: result not object");
         return -1;
     }
 
@@ -177,7 +170,6 @@ int go_callgate_search(JSContext *cx, const char *site,
     g_result_end = prop_int(cx, resobj, "end");
     if (!JS_GetProperty(cx, resobj, "VideoInfo", &vinfo) ||
         !JSVAL_IS_OBJECT(vinfo)) {
-        gt_trace("search: no VideoInfo array");
         return -1;
     }
 
@@ -234,7 +226,7 @@ int go_callgate_search(JSContext *cx, const char *site,
 int go_callgate_video_url(JSContext *cx, const char *url_expr,
                           char *out, int outsz)
 {
-    jsval  rval, exc, arg;
+    jsval  rval, arg;
     int    n = 0;
 
     out[0] = 0;
@@ -249,16 +241,11 @@ int go_callgate_video_url(JSContext *cx, const char *url_expr,
     }
     if (!JS_CallFunctionName(cx, JS_GetGlobalObject(cx),
                              "CallGate_VideoURLResolver", 1, &arg, &rval)) {
-        if (JS_GetPendingException(cx, &exc)) {
-            JSString *es = JS_ValueToString(cx, exc);
-            if (es) gt_trace(JS_GetStringBytes(es));
+        if (JS_IsExceptionPending(cx))
             JS_ClearPendingException(cx);
-        }
-        gt_trace("resolve eval failed");
         return -1;
     }
     if (!JSVAL_IS_STRING(rval)) {
-        gt_trace("resolve: not a string");
         return -1;
     }
     {

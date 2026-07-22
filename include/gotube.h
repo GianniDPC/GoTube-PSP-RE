@@ -228,10 +228,6 @@ JSBool go_log(JSContext *cx, JSObject *obj, uintN argc,
 /* --- callbacks --- */
 int  setup_callbacks(void);
 
-/* --- trace --- */
-void gt_trace(const char *msg);
-void gt_trace_ptr(const char *msg, const void *p);
-
 /* --- boot --- */
 int  module_start(SceSize args, void *argp);
 int  user_main(SceSize args, void *argp);

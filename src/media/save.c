@@ -112,16 +112,15 @@ static int save_worker(SceSize args, void *argp)
 {
     (void)args; (void)argp;
     save_state = 1;
-    if (save_thumb[0] && go_http_download(save_thumb, save_thumb_path,
-                                          NULL, &save_cancel) < 0 && !save_cancel)
-        gt_trace("save thumbnail error");
+    if (save_thumb[0])
+        (void)go_http_download(save_thumb, save_thumb_path,
+                               NULL, &save_cancel);
     if (!save_cancel && go_http_download(save_url, save_path,
                                          &save_progress, &save_cancel) == 0)
         save_state = 2;
     else
         save_state = -1;
     go_thumbnails_suspend(0);
-    gt_trace(save_state == 2 ? "save complete" : "save error");
     sceKernelExitThread(0);
     return 0;
 }
@@ -141,11 +140,9 @@ int go_save_start(JSContext *cx, const char *filename)
     int ret;
     if (save_state == 1) return -1;
     if (go_filename_sanitize(filename, clean, sizeof(clean)) < 0) {
-        gt_trace("save filename conversion error");
         return -1;
     }
     if (go_callgate_video_url(cx, pending_video.url, save_url, sizeof(save_url)) < 0) {
-        gt_trace("save resolver error");
         return -1;
     }
     strncpy(save_thumb, pending_video.thumb, sizeof(save_thumb) - 1);

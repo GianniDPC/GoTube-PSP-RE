@@ -10,7 +10,6 @@
 #include <pspgum.h>
 #include <intraFont.h>
 
-extern void gt_trace(const char *msg);
 
 #define LCD_W 480
 #define LCD_H 272
@@ -92,11 +91,9 @@ void go_gui_init(void)
     /* The original boot call loads only jpn0.pgf here (GT12-BOOT-0001). */
     intraFontInit();
     g_font = intraFontLoad("flash0:/font/jpn0.pgf", 0xe000);
-    gt_trace_ptr("font", (void *)g_font);
 
     g_gui_ready = 1;
     go_thumbnails_init();
-    gt_trace("gui init done");
 }
 
 void go_gui_set_output(int state)

@@ -54,6 +54,11 @@ static int curl_init_once(void)
 static void curl_common(CURL *curl, const char *url)
 {
     curl_easy_setopt(curl, CURLOPT_URL, url);
+    /* The PSPDEV curl package carries its Unix build-time CAPATH
+     * (/etc/ssl/certs).  mbedTLS treats a missing configured directory as a
+     * fatal CURLE_SSL_CACERT_BADFILE even when CAINFO is valid.  Clear it and
+     * use only the certificate bundle shipped beside the EBOOT. */
+    curl_easy_setopt(curl, CURLOPT_CAPATH, NULL);
     curl_easy_setopt(curl, CURLOPT_CAINFO, CA_FILE);
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L);
@@ -99,11 +104,17 @@ char *go_curl_post_json(const char *url, const char *json,
     struct curl_slist *headers = NULL;
     char visitor_header[1024];
     char error[CURL_ERROR_SIZE] = "";
+    SceIoStat ca_stat;
+    int ca_status;
     if (size) *size = 0;
     memset(&body, 0, sizeof(body));
     if (!url || !json || ensure_network() < 0 || curl_init_once() < 0) return NULL;
     curl = curl_easy_init();
     if (!curl) return NULL;
+    memset(&ca_stat, 0, sizeof(ca_stat));
+    ca_status = sceIoGetstat(CA_FILE, &ca_stat);
+    go_modern_trace("TLS CA file status=%d size=%u",
+                    ca_status, (unsigned int)ca_stat.st_size);
     curl_common(curl, url);
     curl_easy_setopt(curl, CURLOPT_TIMEOUT, 45L);
     curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, error);

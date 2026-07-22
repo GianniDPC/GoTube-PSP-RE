@@ -1,6 +1,6 @@
 /*
  * GoTube — common header
- * Includes both PSPSDK and SpiderMonkey APIs used across engine modules.
+ * Shared PSPSDK declarations and native GoTube engine state.
  */
 #ifndef GOTUBE_H
 #define GOTUBE_H
@@ -19,8 +19,6 @@
 #include <psphprm.h>
 #include <psputility.h>
 
-/* SpiderMonkey 1.7.0 */
-#include <jsapi.h>
 #include <intraFont.h>
 
 /* Standard C */
@@ -29,17 +27,11 @@
 #include <string.h>
 #include <stdarg.h>
 
-/* --- bridge --- */
-int   register_js_natives(JSContext *cx);
-void  go_sync_config(JSContext *cx);
+/* --- native registry / transport --- */
 extern char g_favorites[256];
 extern int g_video_out_mode;
 extern int g_screen_zoom;
-void  go_callgate_sitelist(JSContext *cx);
-int   go_callgate_search(JSContext *cx, const char *site,
-                         const char *keyword, int page);
-int   go_callgate_video_url(JSContext *cx, const char *url_expr,
-                            char *out, int outsz);
+void  go_native_registry_init(void);
 int   go_http_download(const char *url, const char *path,
                        volatile int *progress, volatile int *cancel);
 char *go_curl_post_json(const char *url, const char *json,
@@ -145,17 +137,11 @@ extern char g_search_status[128];
 /* --- resolved video URL for the player screen --- */
 extern char g_video_url[2048];
 
-/* --- shared JS context (owned by main.c, used by input/search) --- */
-extern JSContext *g_cx;
-
 /* --- OSK --- */
 int  go_osk_open(const char *desc, const char *initial);
 int  go_osk_update(void);
 void go_osk_get_text(char *out, int outsz);
 int  go_osk_is_active(void);
-
-/* --- JS runtime --- */
-int   go_evaluate_script(JSContext *cx, const char *path);
 
 /* --- GUI --- */
 void  go_gui_init(void);
@@ -189,7 +175,7 @@ int go_player_speed_mode(void);
 void go_player_set_render_mode(int mode);
 int go_player_paused(void);
 int go_save_prepare(const GTVideo *video, char *initial, int initial_size);
-int go_save_start(JSContext *cx, const char *filename);
+int go_save_start(const char *filename);
 int go_save_state(void);
 int go_save_progress(void);
 int go_filename_sanitize(const char *utf8, char *out, int out_size);
@@ -221,24 +207,6 @@ const unsigned short *go_thumbnail_get(int index, int *width, int *height,
                                        int *texture_width, int *texture_height,
                                        int *stride);
 void  go_callback_process(void);
-
-/* --- native implementations --- */
-JSBool go_getcontents(JSContext *cx, JSObject *obj, uintN argc,
-                      jsval *argv, jsval *rval);
-JSBool go_postcontents(JSContext *cx, JSObject *obj, uintN argc,
-                       jsval *argv, jsval *rval);
-JSBool go_alert(JSContext *cx, JSObject *obj, uintN argc,
-                jsval *argv, jsval *rval);
-JSBool go_encodeuri(JSContext *cx, JSObject *obj, uintN argc,
-                    jsval *argv, jsval *rval);
-JSBool go_decodeuri(JSContext *cx, JSObject *obj, uintN argc,
-                    jsval *argv, jsval *rval);
-JSBool go_decodehtml(JSContext *cx, JSObject *obj, uintN argc,
-                     jsval *argv, jsval *rval);
-JSBool go_sjistoutf8(JSContext *cx, JSObject *obj, uintN argc,
-                     jsval *argv, jsval *rval);
-JSBool go_log(JSContext *cx, JSObject *obj, uintN argc,
-              jsval *argv, jsval *rval);
 
 /* --- callbacks --- */
 int  setup_callbacks(void);

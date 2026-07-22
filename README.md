@@ -17,16 +17,18 @@ user authentication is required.
 - Original-style provider, results, menu, multiview and player interfaces
 - Favorites and Playlist filesystem navigation
 - Infrastructure-network configuration and connection status dialogs
-- JavaScript site-provider bridge and HTTP access
+- Native provider registry and TLS HTTP access on `modern-youtube`
 - Local and streamed MP4 playback with H.264 video and AAC audio
 - Playback controls, comments, progress display, thumbnails and video output
 
 ## Modern YouTube branch
 
-The modern provider deliberately does not use the historical provider
-JavaScript. It uses native C and a PSP build of libcurl with mbedTLS to make
-TLS 1.2 Innertube requests. Search results are parsed under a 512 KiB response
-cap and thumbnails are downloaded over the same verified TLS transport.
+The modern application does not create a JavaScript runtime or load historical
+provider scripts. Favorites, Playlist, Onsen and YouTube are registered in
+native C. A PSP build of libcurl with mbedTLS makes TLS 1.2 Innertube requests;
+responses are parsed under a 512 KiB cap and thumbnails use the same verified
+TLS transport. The reconstructed scripts remain in the repository only as
+preservation evidence and are not included in the modern install package.
 
 Playback requests use YouTube's JS-less Android VR client and select only
 progressive itag 18: one MP4 stream containing 360p H.264 Baseline video and
@@ -50,8 +52,8 @@ code paths but does not reproduce every homebrew graphics/media behavior.
 - `psp-config`, `psp-gcc`, `psp-prxgen`, `pack-pbp` and GNU Make in `PATH`
 
 The repository includes the PSP-ready libraries and headers used by the
-current build: SpiderMonkey, FFmpeg, FAAD2 and intraFont. No original EBOOT or
-Ghidra project is required.
+current build: FFmpeg, FAAD2, intraFont, libcurl and mbedTLS. No original EBOOT
+or Ghidra project is required.
 
 ## Building
 
@@ -72,18 +74,19 @@ make -j4
 make historical-package
 ```
 
-The checked-in FFmpeg, FAAD2 and SpiderMonkey archives target PSP/MIPS and are
-linked directly by the application build.
+The checked-in FFmpeg and FAAD2 archives target PSP/MIPS and are linked
+directly by the application build. The historical SpiderMonkey files remain
+only as preservation material and are not compiled into `modern-youtube`.
 
 ## Repository layout
 
 - `src/` — reconstructed application implementation
 - `include/` — application headers and generated CP932 table
-- `runtime/` — JavaScript providers/configuration and required PSP modules
+- `runtime/` — CA bundle, required PSP modules and preserved historical scripts
 - `assets/` — PBP icon and startup audio
 - `vendor/` — intraFont source plus PSP FAAD2 headers/library
 - `third_party/ffmpeg/` — PSP FFmpeg source, headers and libraries
-- `lib/` — PSP SpiderMonkey library and headers
+- `lib/` — preserved PSP SpiderMonkey library and headers (not linked here)
 - `docs/re/` — reverse-engineering notes and recovered behavior documentation
 
 ## Status

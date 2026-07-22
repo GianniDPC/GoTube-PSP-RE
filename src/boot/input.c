@@ -39,9 +39,8 @@ static int modern_search_worker(SceSize args, void *argp)
 
 static int source_requires_network(void)
 {
-    /* Descriptor +8 tested by FUN_0001da58 is clear only for the native
-     * Favorites/Playlist sources.  Onsen and all JS providers require an
-     * infrastructure connection. */
+    /* Descriptor +8 tested by FUN_0001da58 is clear only for Favorites and
+     * Playlist. The native Onsen and YouTube sources require a connection. */
     return !go_source_is_favorites() && !go_source_is_playlist();
 }
 
@@ -62,9 +61,7 @@ static int start_video(const GTVideo *video)
                               sizeof(g_video_url)) < 0) return -1;
         return go_player_start(g_video_url);
     }
-    if (go_callgate_video_url(g_cx, video->url, g_video_url,
-                              sizeof(g_video_url)) < 0) return -1;
-    return go_player_start(g_video_url);
+    return -1;
 }
 
 void go_search_page(int page)
@@ -128,8 +125,7 @@ void go_search_page(int page)
     else if (go_source_is_onsen())
         g_result_count = go_onsen_search(g_search_keyword);
     else
-        g_result_count = go_callgate_search(g_cx, g_site_names[g_site_sel],
-                                            g_search_keyword, page);
+        g_result_count = 0;
     g_result_sel = 0;
     g_screen = SCR_RESULTS;
 }

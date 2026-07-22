@@ -230,6 +230,9 @@ fail:
     return -1;
 }
 
+/* Historical JavaScript wrappers are retained in source for the preservation
+ * branch but excluded from the native modern build. */
+#if 0
 /*
  * GetContents(url) - HTTP GET, returns page body as JS string or null.
  */
@@ -412,3 +415,4 @@ end:
     if (tmpl>=0) sceHttpDeleteTemplate(tmpl);
     return JS_TRUE;
 }
+#endif

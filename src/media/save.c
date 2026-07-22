@@ -134,7 +134,7 @@ int go_save_prepare(const GTVideo *video, char *initial, int initial_size)
     return 0;
 }
 
-int go_save_start(JSContext *cx, const char *filename)
+int go_save_start(const char *filename)
 {
     char clean[400], root[400];
     int ret;
@@ -145,8 +145,10 @@ int go_save_start(JSContext *cx, const char *filename)
     if (strncmp(pending_video.url, "yt:", 3) == 0) {
         if (go_modern_resolve(pending_video.url, save_url, sizeof(save_url)) < 0)
             return -1;
-    } else if (go_callgate_video_url(cx, pending_video.url, save_url,
-                                     sizeof(save_url)) < 0) return -1;
+    } else if (go_source_is_onsen()) {
+        if (go_onsen_resolve(pending_video.url, save_url,
+                             sizeof(save_url)) < 0) return -1;
+    } else return -1;
     strncpy(save_thumb, pending_video.thumb, sizeof(save_thumb) - 1);
     save_thumb[sizeof(save_thumb) - 1] = 0;
     if (strncmp(g_favorites, "ms0:", 4) == 0)

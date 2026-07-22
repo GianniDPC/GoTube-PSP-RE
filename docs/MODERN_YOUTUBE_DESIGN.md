@@ -22,8 +22,9 @@ signature deciphering, or a PO token after an anonymous visitor-data handshake.
 ## PSP architecture
 
 1. Existing GoTube network selection and provider UI remain unchanged.
-2. A native `YouTube` descriptor replaces the dead historical YouTube.js
-   descriptor. Other reconstructed providers remain preserved.
+2. A fixed native registry provides Favorites, Playlist, Onsen and YouTube.
+   The modern EBOOT does not create SpiderMonkey state, scan `site/`, or load
+   `cfg.js`, `site.js`, provider scripts, or the historical updater.
 3. PSP libcurl 7.64.1 plus mbedTLS 2.28.10 handles TLS 1.2. Only the Google
    Trust Services roots needed by YouTube, ytimg and googlevideo are packaged.
 4. Search and continuation responses have a hard 512 KiB allocation cap.
@@ -44,9 +45,9 @@ signature deciphering, or a PO token after an anonymous visitor-data handshake.
 - No adaptive-track merge, JavaScript VM for current player code, video
   transcode, or full-media RAM buffer.
 
-The linked PRX is approximately 4.4 MiB. libcurl/mbedTLS increases it by about
-1.1 MiB compared with the preservation build while dynamic working buffers
-remain bounded as listed above.
+The linked PRX is approximately 3.2 MiB. Removing SpiderMonkey and the legacy
+bridge saves roughly 1.1 MiB of executable code plus the former 512 KiB runtime
+allocation. Dynamic working buffers remain bounded as listed above.
 
 ## Verified off-device
 

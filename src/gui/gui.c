@@ -341,12 +341,10 @@ static void render_results(void)
     framed_rect_4444(base_x, base_y,
                      base_x + g_canvas_w - 1, base_y + 27,
                      0xffff, 0xfddd, 0xf888);
-    /* FUN_0001e380 begins the header with the active descriptor Name.  With
-     * MultiView enabled the recovered site.js expands that Name into the
-     * scrolling breadcrumb seen in the historical screenshots.  The query
-     * and result count occupy the second line.  Putting the descriptor after
-     * an initial newline (as the earlier reconstruction did) pushed the only
-     * useful text below the 27-pixel header when Favorites was empty. */
+    /* FUN_0001e380 begins the header with the active descriptor name. The
+     * native registry supplies the same breadcrumb text; query and result
+     * count occupy the second line. An initial newline would push the only
+     * useful text below the 27-pixel header when Favorites is empty. */
     snprintf(line, sizeof(line), "%s",
              g_site_count ? g_site_names[g_site_sel] : "");
     if (g_result_total != 0) {
@@ -916,7 +914,7 @@ void go_gui_render(void)
                     g_screen = g_menu_return_screen;
                 }
             } else if (g_osk_mode == 2) {
-                go_save_start(g_cx, entered);
+                go_save_start(entered);
                 g_screen = g_menu_return_screen;
             } else if (g_osk_mode == 3) {
                 if (g_result_count > 0)
@@ -964,8 +962,7 @@ void go_gui_render(void)
             else if (go_source_is_onsen())
                 g_result_count = go_onsen_search(g_search_keyword);
             else
-                g_result_count = go_callgate_search(g_cx, g_site_names[0],
-                                                    g_search_keyword, 1);
+                g_result_count = 0;
             g_result_sel = 0;
         }
     }

@@ -29,21 +29,23 @@ signature deciphering, or a PO token after an anonymous visitor-data handshake.
    Trust Services roots needed by YouTube, ytimg and googlevideo are packaged.
 4. Search and continuation responses have a hard 512 KiB allocation cap.
    The parser extracts at most ten compact video records per page.
-5. Player lookup requests the anonymous Android VR client and accepts only
-   progressive itag 18 (MP4, H.264 Baseline, AAC-LC, normally 640x360).
-6. A seekable 512 KiB producer/consumer ring connects libcurl to the recovered
-   FFmpeg custom IO path. Half is retained as backward history because MOV
-   alternates between audio and video chunks. Modern H.264 is reconstructed at
-   320x180 with fast decoding and deblocking disabled for the PSP CPU budget.
+5. Player lookup requests the anonymous Android VR client and selects adaptive
+   itag 160 (256x144 H.264) plus itag 139 (AAC). Save independently resolves
+   progressive itag 18 so the saved object remains a normal single MP4.
+6. One bounded 512 KiB producer/consumer ring connects each adaptive stream to
+   FFmpeg custom IO. The active FFmpeg n0.8.1 build understands the fragmented
+   MOV `moof`/`traf`/`trun` structure and treats these inputs as sequential
+   streams, avoiding a whole-file startup scan. H.264 fast mode and deblocking
+   skip reduce the PSP CPU cost.
 7. HTTPS thumbnails and Save use the same verified transport.
 
 ## Resource bounds
 
 - Search/player response: 512 KiB maximum, freed after parsing.
-- Video network ring: 512 KiB (256 KiB protected seek history).
+- Network ring: 512 KiB per active media stream.
 - TLS/HTTP worker stack: 128 KiB.
 - Result set: ten UI records per page.
-- No adaptive-track merge, JavaScript VM for current player code, video
+- No adaptive-track file merge, JavaScript VM for current player code, video
   transcode, or full-media RAM buffer.
 
 The linked PRX is approximately 3.2 MiB. Removing SpiderMonkey and the legacy
@@ -55,9 +57,9 @@ allocation. Dynamic working buffers remain bounded as listed above.
 - Anonymous current Innertube search returned nineteen compact video records
   and a continuation token.
 - The continuation request returned the next result page.
-- Android VR player lookup returned itag 18 for two current test videos.
-- The selected stream was 640x360 H.264 Baseline plus AAC-LC, with `moov` at
-  byte 28 and media data later in the file.
+- Android VR player lookup returned itag 160 and itag 139 for current videos.
+- An emulator-only live flow opened both fragmented MP4 streams, recognized a
+  256x144 H.264 track, entered playing state and decoded 1,995 paced frames.
 - Native parser host harness extracted ten results, pagination state, metadata,
   visitor data, and the full signed stream URL from captured live responses.
 - The packaged CA roots validate current YouTube and googlevideo certificate
@@ -67,11 +69,11 @@ allocation. Dynamic working buffers remain bounded as listed above.
 ## Known compatibility boundary
 
 This route intentionally favors something the PSP can decode over broad format
-coverage. A video is unsupported if Android VR does not expose progressive
-itag 18. This commonly includes live, DRM, account/age restricted, some
-made-for-kids, and adaptive-only media. Supporting those would require either
-credentials, a changing JavaScript/PO-token implementation, merging tracks,
-or transcoding—none is a sound default on PSP hardware.
+coverage. A video is unsupported if Android VR does not expose the selected
+H.264/AAC pair. This commonly includes live, DRM, account/age restricted and
+some made-for-kids media. Supporting those would require credentials, a
+changing JavaScript/PO-token implementation, or transcoding—none is a sound
+default on PSP hardware.
 
 YouTube is a private, changing service. Client identifiers and response-field
 handling are isolated in `src/media/modern.c`; TLS transport is isolated in
@@ -84,7 +86,7 @@ The first real-PSP qualification should be performed as a single flow:
 1. Boot and connect through the normal PSP network dialog.
 2. Press Select until `YouTube` is active.
 3. Search, load a thumbnail, and move to page two with R.
-4. Play a short ordinary prerecorded video with itag 18.
+4. Play a short ordinary prerecorded video through itag 160 plus itag 139.
 5. Verify video, AAC audio, pause, overlays, size mode, return-to-list, and Save.
 
 If it fails, the failure boundary should be logged at TLS connect, HTTP status,

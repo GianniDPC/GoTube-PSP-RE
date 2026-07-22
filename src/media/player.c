@@ -29,6 +29,7 @@ static volatile int player_cancel = 0;
 static volatile int player_pause = 0;
 static SceUID player_thread = -1;
 static char player_url[2048];
+static char player_audio_url[2048];
 static char player_source_url[512];
 static int player_local_file = 0;
 static int player_frames_decoded = 0;
@@ -180,10 +181,17 @@ static int stream_read_packet(void *opaque, uint8_t *buffer, int size)
     return go_http_stream_read(opaque, buffer, size);
 }
 
-static offset_t stream_seek_packet(void *opaque, offset_t offset, int whence)
+#if LIBAVFORMAT_VERSION_MAJOR >= 53
+typedef int64_t GoStreamOffset;
+#else
+typedef offset_t GoStreamOffset;
+#endif
+
+static GoStreamOffset stream_seek_packet(void *opaque, GoStreamOffset offset,
+                                         int whence)
 {
     if (player_cancel) return -1;
-    return (offset_t)go_http_stream_seek(opaque, offset, whence);
+    return (GoStreamOffset)go_http_stream_seek(opaque, offset, whence);
 }
 
 static int video_decode_worker(SceSize args, void *argp)
@@ -199,7 +207,6 @@ static int video_decode_worker(SceSize args, void *argp)
         int64_t stamp = packet.pts != (int64_t)AV_NOPTS_VALUE ? packet.pts : packet.dts;
         if (stamp != (int64_t)AV_NOPTS_VALUE) {
             uint64_t now = sceKernelGetSystemTimeWide();
-            player_time_value = (int)(stamp * av_q2d(pipeline->video_time_base) * 100.0) + 100;
             /* Audio output is blocking, but it does not pace this independent
              * video worker.  The former audio-present branch therefore
              * published H.264 frames as quickly as the CPU decoded them (the
@@ -211,7 +218,10 @@ static int video_decode_worker(SceSize args, void *argp)
             if (first_pts == (int64_t)AV_NOPTS_VALUE) {
                 first_pts = stamp;
                 clock_start = now;
+                player_time_value = 100;
             } else {
+                player_time_value = (int)((stamp - first_pts) *
+                                    av_q2d(pipeline->video_time_base) * 100.0) + 100;
                 int64_t wait = (int64_t)((stamp - first_pts) *
                                av_q2d(pipeline->video_time_base) * 1000000.0) -
                                (int64_t)(now - clock_start);
@@ -222,8 +232,19 @@ static int video_decode_worker(SceSize args, void *argp)
             int used;
             got_picture = 0;
             sceKernelWaitSema(pipeline->codec_lock, 1, NULL);
+#if LIBAVCODEC_VERSION_MAJOR >= 53
+            {
+                AVPacket decode_packet;
+                av_init_packet(&decode_packet);
+                decode_packet.data = data;
+                decode_packet.size = left;
+                used = avcodec_decode_video2(pipeline->video, pipeline->picture,
+                                             &got_picture, &decode_packet);
+            }
+#else
             used = avcodec_decode_video(pipeline->video, pipeline->picture,
                                         &got_picture, data, left);
+#endif
             sceKernelSignalSema(pipeline->codec_lock, 1);
             if (used <= 0) break;
             data += used;
@@ -256,9 +277,70 @@ static int audio_decode_worker(SceSize args, void *argp)
     return 0;
 }
 
-static int decode_file(const char *path, int remote)
+static void decode_and_queue_audio(PlayerPipeline *pipeline,
+                                   AVCodecContext *audio, AVPacket *packet,
+                                   short *audio_buffer, short *stereo_buffer)
 {
-    AVFormatContext *format = NULL;
+    int left = packet->size;
+    unsigned char *data = packet->data;
+    while (left > 0 && !player_cancel) {
+        int audio_size = AVCODEC_MAX_AUDIO_FRAME_SIZE;
+        int used;
+#if LIBAVCODEC_VERSION_MAJOR >= 53
+        AVPacket decode_packet;
+        av_init_packet(&decode_packet);
+        decode_packet.data = data;
+        decode_packet.size = left;
+        used = avcodec_decode_audio3(audio, audio_buffer, &audio_size,
+                                     &decode_packet);
+#else
+        used = avcodec_decode_audio2(audio, audio_buffer, &audio_size,
+                                     data, left);
+#endif
+        if (used <= 0) break;
+        data += used;
+        left -= used;
+        if (audio_size > 0 && pipeline->audio_reserved) {
+            int samples = audio_size / (audio->channels * (int)sizeof(short));
+            short *output = audio_buffer;
+            AVPacket pcm;
+            if (audio->channels == 1) {
+                int n;
+                for (n = 0; n < samples; n++) {
+                    stereo_buffer[n * 2] = audio_buffer[n];
+                    stereo_buffer[n * 2 + 1] = audio_buffer[n];
+                }
+                output = stereo_buffer;
+            }
+            if (samples == pipeline->audio_frame_samples &&
+                (audio->channels == 1 || audio->channels == 2) &&
+                av_new_packet(&pcm, samples * 2 * (int)sizeof(short)) >= 0) {
+                memcpy(pcm.data, output, pcm.size);
+                if (packet_queue_put(&pipeline->audio_q, &pcm) < 0)
+                    av_free_packet(&pcm);
+            }
+        }
+    }
+}
+
+static void close_remote_format(AVFormatContext *format,
+                                unsigned char **io_buffer)
+{
+    int flags;
+    if (!format) return;
+    flags = format->iformat->flags;
+    format->iformat->flags |= AVFMT_NOFILE;
+    av_close_input_file(format);
+    format->iformat->flags = flags;
+    if (io_buffer && *io_buffer) {
+        av_free(*io_buffer);
+        *io_buffer = NULL;
+    }
+}
+
+static int decode_file(const char *path, const char *audio_path, int remote)
+{
+    AVFormatContext *format = NULL, *audio_format = NULL;
     AVCodecContext *video = NULL, *audio = NULL;
     AVCodec *codec;
     AVFrame *picture = NULL;
@@ -268,11 +350,9 @@ static int decode_file(const char *path, int remote)
     int i;
     short *audio_buffer = NULL;
     short *stereo_buffer = NULL;
-    void *http_stream = NULL;
-    unsigned char *io_buffer = NULL;
-    ByteIOContext io;
-    int input_flags = 0;
-    AVInputFormat *stream_format = NULL;
+    void *http_stream = NULL, *audio_http_stream = NULL;
+    unsigned char *io_buffer = NULL, *audio_io_buffer = NULL;
+    ByteIOContext io, audio_io;
     PlayerPipeline pipeline;
     PlayerPipeline *pipeline_arg = &pipeline;
     SceUID video_thread = -1, audio_thread = -1;
@@ -282,39 +362,94 @@ static int decode_file(const char *path, int remote)
     pipeline.codec_lock = -1;
 
     av_register_all();
-    go_modern_trace("PLAYER demux begin remote=%d modern_mp4=%d", remote,
-                    remote && strstr(path, "itag=18") != NULL);
+    go_modern_trace("PLAYER demux begin remote=%d adaptive=%d", remote,
+                    audio_path && audio_path[0]);
     if (remote) {
-        AVInputFormat *input = strstr(path, "itag=18") ?
+        AVInputFormat *input = (strstr(path, "itag=18") ||
+                                strstr(path, "itag=160")) ?
             av_find_input_format("mov,mp4,m4a,3gp,3g2,mj2") :
             av_find_input_format("flv");
-        stream_format = input;
         http_stream = go_http_stream_open(path);
         io_buffer = av_malloc(32768);
         if (!http_stream || !io_buffer || !input) goto fail;
         init_put_byte(&io, io_buffer, 32768, 0, http_stream,
                       stream_read_packet, NULL, stream_seek_packet);
-        io.is_streamed = 0;
+        /* DASH/fMP4 carries initialization and successive moof/mdat fragments
+         * in presentation order.  Advertising it as a random-access file
+         * makes the MOV probe scan the multi-megabyte tail before playback,
+         * which cannot fit in the PSP's bounded transport ring. */
+        io.is_streamed = audio_path && audio_path[0] ? 1 : 0;
+#if LIBAVFORMAT_VERSION_MAJOR >= 53
+        if (audio_path && audio_path[0]) io.seekable = 0;
+#endif
         if (av_open_input_stream(&format, &io, path, input, NULL) < 0) goto fail;
+        if (audio_path && audio_path[0]) {
+            audio_http_stream = go_http_stream_open(audio_path);
+            audio_io_buffer = av_malloc(32768);
+            if (!audio_http_stream || !audio_io_buffer) goto fail;
+            init_put_byte(&audio_io, audio_io_buffer, 32768, 0,
+                          audio_http_stream, stream_read_packet, NULL,
+                          stream_seek_packet);
+            audio_io.is_streamed = 1;
+#if LIBAVFORMAT_VERSION_MAJOR >= 53
+            audio_io.seekable = 0;
+#endif
+            if (av_open_input_stream(&audio_format, &audio_io, audio_path,
+                                     input, NULL) < 0) goto fail;
+        }
     } else if (av_open_input_file(&format, path, NULL, 0, NULL) < 0) goto fail;
     if (av_find_stream_info(format) < 0) {
         go_modern_trace("PLAYER stream_info failed");
+        goto fail;
+    }
+    if (audio_format && av_find_stream_info(audio_format) < 0) {
+        go_modern_trace("PLAYER audio stream_info failed");
         goto fail;
     }
     go_modern_trace("PLAYER stream_info ok streams=%d", (int)format->nb_streams);
     if (format->duration > 0)
         player_duration_value = (int)(format->duration / (AV_TIME_BASE / 100));
     for (i = 0; i < (int)format->nb_streams; i++) {
-        if (format->streams[i]->codec->codec_type == CODEC_TYPE_VIDEO && video_stream < 0)
+        if (format->streams[i]->codec->codec_type ==
+#if LIBAVCODEC_VERSION_MAJOR >= 53
+            AVMEDIA_TYPE_VIDEO
+#else
+            CODEC_TYPE_VIDEO
+#endif
+            && video_stream < 0)
             video_stream = i;
-        if (format->streams[i]->codec->codec_type == CODEC_TYPE_AUDIO && audio_stream < 0)
+        if (!audio_format &&
+            format->streams[i]->codec->codec_type ==
+#if LIBAVCODEC_VERSION_MAJOR >= 53
+            AVMEDIA_TYPE_AUDIO
+#else
+            CODEC_TYPE_AUDIO
+#endif
+            && audio_stream < 0)
             audio_stream = i;
+    }
+    if (audio_format) {
+        for (i = 0; i < (int)audio_format->nb_streams; i++)
+            if (audio_format->streams[i]->codec->codec_type ==
+#if LIBAVCODEC_VERSION_MAJOR >= 53
+                AVMEDIA_TYPE_AUDIO
+#else
+                CODEC_TYPE_AUDIO
+#endif
+                ) {
+                audio_stream = i;
+                break;
+            }
     }
     if (video_stream >= 0) {
         video = format->streams[video_stream]->codec;
         /* FUN_00022764 codec context contract. */
         video->workaround_bugs = 1;
+#if LIBAVCODEC_VERSION_MAJOR < 53
         video->error_resilience = 1;
+#else
+        video->error_recognition = 1;
+#endif
         video->error_concealment = 3;
         video->thread_count = 1;
         /* Decode YouTube's 640x360 stream directly to 320x180.  Scaling a
@@ -331,7 +466,7 @@ static int decode_file(const char *path, int remote)
          * not required for correct reference reconstruction, and is one of
          * the largest pure-CPU costs on Allegrex.  Preserve exact legacy/local
          * playback settings; apply this only to modern remote MP4. */
-        if (remote && strstr(path, "itag=18")) {
+        if (remote && (strstr(path, "itag=18") || audio_format)) {
             video->flags2 |= CODEC_FLAG2_FAST;
             video->skip_loop_filter = AVDISCARD_ALL;
         } else {
@@ -351,7 +486,7 @@ static int decode_file(const char *path, int remote)
         }
     }
     if (audio_stream >= 0) {
-        audio = format->streams[audio_stream]->codec;
+        audio = (audio_format ? audio_format : format)->streams[audio_stream]->codec;
         codec = avcodec_find_decoder(audio->codec_id);
         if (!codec || avcodec_open(audio, codec) < 0) audio = NULL;
         else {
@@ -361,6 +496,10 @@ static int decode_file(const char *path, int remote)
             if (audio->frame_size > 0) audio_frame_samples = audio->frame_size;
             audio_reserved = sceAudioSRCChReserve(audio_frame_samples,
                                                   audio->sample_rate, 2) >= 0;
+            go_modern_trace("PLAYER audio codec=%d rate=%d channels=%d frame=%d reserved=%d",
+                            audio->codec_id, audio->sample_rate,
+                            audio->channels, audio_frame_samples,
+                            audio_reserved);
         }
     }
     if (!video && !audio) goto fail;
@@ -393,7 +532,34 @@ static int decode_file(const char *path, int remote)
                                                      &pipeline_arg) < 0) goto fail;
     }
     player_status = 2;
-    while (!player_cancel && av_read_frame(format, &packet) >= 0) {
+    if (audio_format) {
+        int video_eof = 0, audio_eof = 0;
+        while (!player_cancel && (!video_eof || !audio_eof)) {
+            if (player_pause && !player_cancel) {
+                while (player_pause && !player_cancel)
+                    sceKernelDelayThread(10000);
+            }
+            if (!video_eof) {
+                if (av_read_frame(format, &packet) < 0) video_eof = 1;
+                else {
+                    if (video && packet.stream_index == video_stream) {
+                        if (packet_queue_put(&pipeline.video_q, &packet) < 0)
+                            av_free_packet(&packet);
+                    }
+                    av_free_packet(&packet);
+                }
+            }
+            if (!audio_eof && !player_cancel) {
+                if (av_read_frame(audio_format, &packet) < 0) audio_eof = 1;
+                else {
+                    if (audio && packet.stream_index == audio_stream)
+                        decode_and_queue_audio(&pipeline, audio, &packet,
+                                               audio_buffer, stereo_buffer);
+                    av_free_packet(&packet);
+                }
+            }
+        }
+    } else while (!player_cancel && av_read_frame(format, &packet) >= 0) {
         if (player_pause && !player_cancel) {
             while (player_pause && !player_cancel)
                 sceKernelDelayThread(10000);
@@ -405,36 +571,8 @@ static int decode_file(const char *path, int remote)
         if (video && packet.stream_index == video_stream) {
             if (packet_queue_put(&pipeline.video_q, &packet) < 0) av_free_packet(&packet);
         } else if (audio && packet.stream_index == audio_stream) {
-            int left = packet.size;
-            unsigned char *data = packet.data;
-            while (left > 0 && !player_cancel) {
-                int audio_size = AVCODEC_MAX_AUDIO_FRAME_SIZE;
-                int used = avcodec_decode_audio2(audio, audio_buffer, &audio_size, data, left);
-                if (used <= 0) break;
-                data += used;
-                left -= used;
-                if (audio_size > 0 && audio_reserved) {
-                    int samples = audio_size / (audio->channels * (int)sizeof(short));
-                    short *output = audio_buffer;
-                    AVPacket pcm;
-                    if (audio->channels == 1) {
-                        int n;
-                        for (n = 0; n < samples; n++) {
-                            stereo_buffer[n * 2] = audio_buffer[n];
-                            stereo_buffer[n * 2 + 1] = audio_buffer[n];
-                        }
-                        output = stereo_buffer;
-                    }
-                    if (samples == audio_frame_samples &&
-                        (audio->channels == 1 || audio->channels == 2) &&
-                        av_new_packet(&pcm, samples * 2 * (int)sizeof(short)) >= 0) {
-                        if (audio->channels == 2) memcpy(pcm.data, output, pcm.size);
-                        else memcpy(pcm.data, output, pcm.size);
-                        if (packet_queue_put(&pipeline.audio_q, &pcm) < 0)
-                            av_free_packet(&pcm);
-                    }
-                }
-            }
+            decode_and_queue_audio(&pipeline, audio, &packet,
+                                   audio_buffer, stereo_buffer);
         }
         av_free_packet(&packet);
     }
@@ -451,11 +589,12 @@ static int decode_file(const char *path, int remote)
     if (picture) av_free(picture);
     if (video) avcodec_close(video);
     if (audio) avcodec_close(audio);
+    if (audio_format) close_remote_format(audio_format, &audio_io_buffer);
     if (format) {
-        if (remote) { input_flags = format->iformat->flags; format->iformat->flags |= AVFMT_NOFILE; }
-        av_close_input_file(format);
-        if (remote) { stream_format->flags = input_flags; av_free(io_buffer); io_buffer = NULL; }
+        if (remote) close_remote_format(format, &io_buffer);
+        else av_close_input_file(format);
     }
+    if (audio_http_stream) go_http_stream_close(audio_http_stream);
     if (http_stream) go_http_stream_close(http_stream);
     return player_cancel ? -1 : 0;
 
@@ -474,12 +613,14 @@ fail:
     if (picture) av_free(picture);
     if (video) avcodec_close(video);
     if (audio) avcodec_close(audio);
+    if (audio_format) close_remote_format(audio_format, &audio_io_buffer);
     if (format) {
-        if (remote) { input_flags = format->iformat->flags; format->iformat->flags |= AVFMT_NOFILE; }
-        av_close_input_file(format);
-        if (remote) { stream_format->flags = input_flags; av_free(io_buffer); io_buffer = NULL; }
+        if (remote) close_remote_format(format, &io_buffer);
+        else av_close_input_file(format);
     }
+    if (audio_io_buffer) av_free(audio_io_buffer);
     if (io_buffer) av_free(io_buffer);
+    if (audio_http_stream) go_http_stream_close(audio_http_stream);
     if (http_stream) go_http_stream_close(http_stream);
     return -1;
 }
@@ -488,7 +629,9 @@ static int player_worker(SceSize args, void *argp)
 {
     (void)args; (void)argp;
     player_status = 1;
-    player_status = decode_file(player_url, !player_local_file) < 0 ? -2 : 3;
+    player_status = decode_file(player_url,
+                                player_audio_url[0] ? player_audio_url : NULL,
+                                !player_local_file) < 0 ? -2 : 3;
     sceKernelExitThread(0);
     return 0;
 }
@@ -504,6 +647,7 @@ int go_player_start(const char *url)
     }
     strncpy(player_url, url, sizeof(player_url) - 1);
     player_url[sizeof(player_url) - 1] = 0;
+    player_audio_url[0] = 0;
     player_local_file = 0;
     player_cancel = 0;
     player_pause = 0;
@@ -531,6 +675,42 @@ int go_player_start(const char *url)
     }
 }
 
+int go_player_start_adaptive(const char *video_url, const char *audio_url)
+{
+    int ret;
+    if (!video_url || !video_url[0] || !audio_url || !audio_url[0] ||
+        ((player_status == 1 || player_status == 2) && !player_cancel))
+        return -1;
+    if (player_thread >= 0) {
+        sceKernelWaitThreadEnd(player_thread, NULL);
+        sceKernelDeleteThread(player_thread);
+        player_thread = -1;
+    }
+    snprintf(player_url, sizeof(player_url), "%s", video_url);
+    snprintf(player_audio_url, sizeof(player_audio_url), "%s", audio_url);
+    player_local_file = 0;
+    player_cancel = 0;
+    player_pause = 0;
+    player_progress_value = 0;
+    frame_index = -1;
+    player_frames_decoded = 0;
+    player_time_value = 0;
+    player_duration_value = 0;
+    player_thread = sceKernelCreateThread("GoTube.player", player_worker,
+                                          0x22, 0x40000,
+                                          PSP_THREAD_ATTR_USER |
+                                          PSP_THREAD_ATTR_VFPU, NULL);
+    if (player_thread < 0) return player_thread;
+    player_status = 1;
+    ret = sceKernelStartThread(player_thread, 0, NULL);
+    if (ret < 0) {
+        sceKernelDeleteThread(player_thread);
+        player_thread = -1;
+        player_status = -1;
+    }
+    return ret;
+}
+
 int go_player_start_file(const char *path)
 {
     int ret;
@@ -543,6 +723,7 @@ int go_player_start_file(const char *path)
     }
     strncpy(player_url, path, sizeof(player_url) - 1);
     player_url[sizeof(player_url) - 1] = 0;
+    player_audio_url[0] = 0;
     player_local_file = 1;
     player_cancel = 0;
     player_pause = 0;

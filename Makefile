@@ -10,18 +10,18 @@ OBJS = \
 	src/media/audio.o src/media/player.o src/media/comments.o src/media/save.o src/media/local.o src/media/modern.o src/net/net.o src/net/curl_http.o \
 	src/video/video.o src/video/dvemgr.o
 
-INCDIR = vendor/intrafont-0.22 vendor/intrafont-0.31 vendor/faad include third_party/ffmpeg \
-	third_party/ffmpeg/libavcodec third_party/ffmpeg/libavformat \
-	third_party/ffmpeg/libavutil
+INCDIR = vendor/intrafont-0.22 vendor/intrafont-0.31 include third_party/ffmpeg-modern \
+	third_party/ffmpeg-modern/libavcodec third_party/ffmpeg-modern/libavformat \
+	third_party/ffmpeg-modern/libavutil
 CFLAGS = -O2 -G0 -Wall -Wextra -Wno-unused-parameter -DXP_UNIX
 CXXFLAGS = $(CFLAGS) -fno-exceptions -fno-rtti
 ASFLAGS = $(CFLAGS)
 
-LIBDIR = third_party/ffmpeg/libavformat third_party/ffmpeg/libavcodec \
-	third_party/ffmpeg/libavutil vendor/faad/lib
-LIBS = -lavformat -lavcodec -lfaad -lavutil -ljpeg -lcurl \
+LIBDIR = third_party/ffmpeg-modern/libavformat third_party/ffmpeg-modern/libavcodec \
+	third_party/ffmpeg-modern/libavutil
+LIBS = -lavformat -lavcodec -lavutil -ljpeg -lcurl \
 	-lmbedtls -lmbedx509 -lmbedcrypto -lz -lm -lc -lcglue -lpthreadglue -lpthread -lpsprtc \
-	-lpspgum -lpspgu -lpspdisplay -lpspctrl -lpsppower \
+	-lpspgum -lpspgu -lpspge -lpspdisplay -lpspctrl -lpsppower \
 	-lpsputility -lpsphttp -lpspssl -lpspnet -lpspnet_inet \
 	-lpspnet_apctl -lpspnet_resolver -lpspwlan -lpsphprm -lpspkubridge -lpspsdk -lpspaudio
 

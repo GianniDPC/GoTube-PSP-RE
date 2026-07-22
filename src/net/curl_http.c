@@ -29,6 +29,7 @@ typedef struct {
     volatile int done, cancel, error;
     volatile long long data_start, data_end, position;
     long long start_offset, total_size;
+    int header_seen;
     SceUID thread;
 } CurlStream;
 
@@ -282,6 +283,10 @@ static size_t stream_header(char *ptr, size_t size, size_t count, void *opaque)
     CurlStream *stream = opaque;
     int bytes = size * count;
     long long start, end, total;
+    if (!stream->header_seen && bytes >= 5 && !strncasecmp(ptr, "HTTP/", 5)) {
+        stream->header_seen = 1;
+        go_modern_trace("STREAM response %.40s", ptr);
+    }
     if (bytes > 14 && strncasecmp(ptr, "Content-Range:", 14) == 0 &&
         sscanf(ptr + 14, " bytes %lld-%lld/%lld", &start, &end, &total) == 3)
         stream->total_size = total;
@@ -298,9 +303,11 @@ static int stream_thread(SceSize args, void *argp)
     CURL *curl = curl_easy_init();
     CURLcode result = CURLE_FAILED_INIT;
     char range[64];
+    char error[CURL_ERROR_SIZE] = "";
     go_modern_trace("STREAM worker begin offset=%lld", stream->start_offset);
     if (curl) {
         curl_common(curl, stream->url);
+        curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, error);
         if (stream->start_offset > 0) {
             snprintf(range, sizeof(range), "%lld-", stream->start_offset);
             curl_easy_setopt(curl, CURLOPT_RANGE, range);
@@ -313,7 +320,9 @@ static int stream_thread(SceSize args, void *argp)
         curl_easy_cleanup(curl);
     }
     stream->error = !stream->cancel && result != CURLE_OK;
-    go_modern_trace("STREAM worker end curl=%d cancel=%d", result, stream->cancel);
+    go_modern_trace("STREAM worker end curl=%d(%s) cancel=%d bytes=%lld error=%s",
+                    result, curl_easy_strerror(result), stream->cancel,
+                    stream->data_end - stream->start_offset, error);
     stream->done = 1;
     sceKernelExitThread(0);
     return 0;
@@ -325,7 +334,7 @@ static int stream_start(CurlStream *stream, long long offset)
                              offset - RING_SIZE / 2 : 0;
     stream->start_offset = stream->data_start = stream->data_end = fetch_offset;
     stream->position = offset;
-    stream->done = stream->cancel = stream->error = 0;
+    stream->done = stream->cancel = stream->error = stream->header_seen = 0;
     stream->thread = sceKernelCreateThread("GoTube.curl", stream_thread,
                       /* Keep TLS receive ahead of the decoder.  At the old
                        * 0x24 priority, sustained H.264 work could starve the

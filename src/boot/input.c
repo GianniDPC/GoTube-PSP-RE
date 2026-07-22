@@ -57,9 +57,12 @@ static int start_video(const GTVideo *video)
         return go_player_start(g_video_url);
     }
     if (strncmp(video->url, "yt:", 3) == 0) {
-        if (go_modern_resolve(video->url, g_video_url,
-                              sizeof(g_video_url)) < 0) return -1;
-        return go_player_start(g_video_url);
+        char audio_url[2048];
+        if (go_modern_resolve_adaptive(video->url,
+                                       g_video_url, sizeof(g_video_url),
+                                       audio_url, sizeof(audio_url)) < 0)
+            return -1;
+        return go_player_start_adaptive(g_video_url, audio_url);
     }
     return -1;
 }

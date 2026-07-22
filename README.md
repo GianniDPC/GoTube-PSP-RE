@@ -30,19 +30,19 @@ responses are parsed under a 512 KiB cap and thumbnails use the same verified
 TLS transport. The reconstructed scripts remain in the repository only as
 preservation evidence and are not included in the modern install package.
 
-Playback requests use YouTube's JS-less Android VR client and select only
-progressive itag 18: one MP4 stream containing 360p H.264 Baseline video and
-AAC-LC audio. Modern streams use FFmpeg's half-resolution H.264 reconstruction
-(320x180), fast decoding and deblocking skip to stay within the PSP CPU budget.
-The PSP does not attempt to merge DASH tracks or decode AV1,
-VP9, Opus, high-profile H.264, or resolutions beyond its practical limits.
-The seekable MP4 transport uses a 512 KiB ring with 256 KiB protected history,
-so interleaved audio/video reads do not reconnect while the full video is
-neither stored in RAM nor downloaded before playback.
+Playback requests use YouTube's JS-less Android VR client and select the
+lowest current adaptive pair: itag 160 (256x144 H.264) and itag 139 (AAC).
+The two fragmented MP4 inputs are consumed concurrently and queued into the
+original-style video/audio workers; no temporary merged file is created.
+Modern H.264 uses fast decoding and skips deblocking to stay within the PSP CPU
+budget. The PSP does not attempt to decode AV1, VP9, Opus, or resolutions beyond
+its practical limits. A bounded 512 KiB ring backs each network input, so the
+full video is neither stored in RAM nor downloaded before playback. Save keeps
+using progressive itag 18 because a directly playable single MP4 is required.
 
 This compatibility route cannot make every YouTube item playable. Live, DRM,
-age/account restricted, made-for-kids client-restricted, and videos without a
-progressive itag 18 are reported as unsupported. YouTube can change its
+age/account restricted, made-for-kids client-restricted, and videos without the
+selected 144p H.264/AAC pair are reported as unsupported. YouTube can change its
 private Innertube behavior; client constants are intentionally isolated in
 [`src/media/modern.c`](src/media/modern.c).
 
@@ -77,8 +77,10 @@ make -j4
 make historical-package
 ```
 
-The checked-in FFmpeg and FAAD2 archives target PSP/MIPS and are linked
-directly by the application build. The historical SpiderMonkey files remain
+The checked-in FFmpeg archives target PSP/MIPS and are linked directly by the
+application build. `third_party/ffmpeg-modern` is the playback build (FFmpeg
+n0.8.1 with MOV fragments, H.264, AAC, FLV/H.263 and MP3 enabled); the older
+tree and FAAD2 dependency remain as preservation material. The historical SpiderMonkey files remain
 only as preservation material and are not compiled into `modern-youtube`.
 
 ## Repository layout
@@ -88,7 +90,8 @@ only as preservation material and are not compiled into `modern-youtube`.
 - `runtime/` — CA bundle, required PSP modules and preserved historical scripts
 - `assets/` — PBP icon and startup audio
 - `vendor/` — intraFont source plus PSP FAAD2 headers/library
-- `third_party/ffmpeg/` — PSP FFmpeg source, headers and libraries
+- `third_party/ffmpeg-modern/` — active PSP FFmpeg n0.8.1 source and libraries
+- `third_party/ffmpeg/` — preserved original-era FFmpeg source and libraries
 - `lib/` — preserved PSP SpiderMonkey library and headers (not linked here)
 - `docs/re/` — reverse-engineering notes and recovered behavior documentation
 

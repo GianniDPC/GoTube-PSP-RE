@@ -129,6 +129,9 @@ int go_onsen_resolve(const char *url, char *out, int out_size);
 int go_modern_is_source(void);
 int go_modern_search(const char *keyword, int page);
 int go_modern_resolve(const char *url, char *out, int out_size);
+int go_modern_resolve_adaptive(const char *url,
+                               char *video, int video_size,
+                               char *audio, int audio_size);
 int go_source_enter(const GTVideo *video);
 int go_source_parent(void);
 int go_local_rename(const GTVideo *video, const char *filename);
@@ -165,6 +168,7 @@ extern int g_net_online;
 
 /* --- media player --- */
 int go_player_start(const char *url);
+int go_player_start_adaptive(const char *video_url, const char *audio_url);
 int go_player_start_file(const char *path); /* qualification harness only */
 void go_player_stop(void);
 void go_player_toggle_pause(void);

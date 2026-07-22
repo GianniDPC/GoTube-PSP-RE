@@ -1,6 +1,4 @@
-/* Standalone modern YouTube provider.
- * Uses the current JS-less Android VR Innertube client and accepts only itag
- * 18 (progressive H.264 Baseline + AAC), which the recovered player can decode. */
+/* Standalone modern YouTube provider using the JS-less Android VR client. */
 #include "gotube.h"
 #include <ctype.h>
 
@@ -10,6 +8,29 @@
 
 static char visitor_data[1024];
 static char continuation[51][1024];
+
+static const char *bounded_find(const char *p, const char *end,
+                                const char *text);
+static int json_value(const char *start, const char *end, const char *key,
+                      char *out, int out_size);
+
+static int format_url(char *json, char *end, int wanted,
+                      char *out, int out_size)
+{
+    char *itag = json;
+    while ((itag = (char *)bounded_find(itag, end, "\"itag\""))) {
+        char *number = itag + 6;
+        while (number < end &&
+               (*number == ' ' || *number == ':' || *number == '\t'))
+            number++;
+        if (atoi(number) == wanted &&
+            json_value(itag, end, "url", out, out_size) > 0)
+            return strlen(out);
+        itag = number;
+    }
+    if (out_size > 0) out[0] = 0;
+    return -1;
+}
 
 static const char *bounded_find(const char *p, const char *end, const char *text)
 {
@@ -223,7 +244,7 @@ int go_modern_search(const char *keyword, int page)
 
 int go_modern_resolve(const char *value, char *out, int out_size)
 {
-    char request[3072], *json, *end, *itag, visitor_before[1024];
+    char request[3072], *json, *end, visitor_before[1024];
     int size, attempt;
     const char *id = value;
     if (!value || !out || out_size < 16) return -1;
@@ -239,14 +260,7 @@ int go_modern_resolve(const char *value, char *out, int out_size)
         json = go_curl_post_json(PLAYER_API, request, visitor_data, &size);
         if (!json) return -1;
         end = json + size; remember_visitor(json, end);
-        itag = json;
-        while ((itag = (char *)bounded_find(itag, end, "\"itag\""))) {
-            char *number = itag + 6;
-            while (number < end && (*number == ' ' || *number == ':' || *number == '\t')) number++;
-            if (atoi(number) == 18) break;
-            itag = number;
-        }
-        if (itag && json_value(itag, end, "url", out, out_size) > 0) {
+        if (format_url(json, end, 18, out, out_size) > 0) {
             go_modern_trace("RESOLVE itag18 url_bytes=%d attempt=%d",
                             (int)strlen(out), attempt + 1);
             free(json); return strlen(out);
@@ -256,5 +270,47 @@ int go_modern_resolve(const char *value, char *out, int out_size)
     }
     out[0] = 0;
     go_modern_trace("RESOLVE unsupported no_itag18");
+    return -1;
+}
+
+int go_modern_resolve_adaptive(const char *value,
+                               char *video, int video_size,
+                               char *audio, int audio_size)
+{
+    char request[3072], *json, *end, visitor_before[1024];
+    int size, attempt;
+    const char *id = value;
+    if (!value || !video || !audio || video_size < 16 || audio_size < 16)
+        return -1;
+    if (strncmp(id, "yt:", 3) == 0) id += 3;
+    if (strlen(id) != 11) return -1;
+    video[0] = audio[0] = 0;
+    go_modern_trace("RESOLVE adaptive begin id_length=%d visitor=%d",
+                    (int)strlen(id), visitor_data[0] != 0);
+    for (attempt = 0; attempt < 2; attempt++) {
+        snprintf(request, sizeof(request),
+                 "{\"videoId\":\"%s\",\"context\":{\"client\":{%s%s%s%s}}}",
+                 id, CLIENT_JSON,
+                 visitor_data[0] ? ",\"visitorData\":\"" : "",
+                 visitor_data[0] ? visitor_data : "",
+                 visitor_data[0] ? "\"" : "");
+        strcpy(visitor_before, visitor_data);
+        json = go_curl_post_json(PLAYER_API, request, visitor_data, &size);
+        if (!json) return -1;
+        end = json + size;
+        remember_visitor(json, end);
+        if (format_url(json, end, 160, video, video_size) > 0 &&
+            format_url(json, end, 139, audio, audio_size) > 0) {
+            go_modern_trace("RESOLVE adaptive itag160=%d itag139=%d attempt=%d",
+                            (int)strlen(video), (int)strlen(audio), attempt + 1);
+            free(json);
+            return strlen(video);
+        }
+        free(json);
+        video[0] = audio[0] = 0;
+        if (!visitor_data[0] || strcmp(visitor_before, visitor_data) == 0)
+            break;
+    }
+    go_modern_trace("RESOLVE unsupported no_itag160_139");
     return -1;
 }

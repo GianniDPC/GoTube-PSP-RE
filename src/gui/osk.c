@@ -20,6 +20,9 @@ static unsigned short      g_osk_intext[128];
 static unsigned short      g_osk_outtext[128];
 static unsigned short      g_osk_desc[64];
 static int                 g_osk_active = 0;
+static int                 g_osk_shutdown = 0;
+static int                 g_osk_result = PSP_UTILITY_OSK_RESULT_CANCELLED;
+static int                 g_osk_last_status = -1;
 
 int go_utility_button_swap(void)
 {
@@ -70,6 +73,9 @@ int go_osk_open(const char *desc, const char *initial)
     to_utf16(desc, g_osk_desc, 64);
     to_utf16(initial, g_osk_intext, 128);
     g_osk_outtext[0] = 0;
+    g_osk_shutdown = 0;
+    g_osk_result = PSP_UTILITY_OSK_RESULT_CANCELLED;
+    g_osk_last_status = -1;
 
     memset(&g_osk_data, 0, sizeof(g_osk_data));
     g_osk_data.language       = PSP_UTILITY_OSK_LANGUAGE_DEFAULT;
@@ -101,6 +107,7 @@ int go_osk_open(const char *desc, const char *initial)
     }
 
     g_osk_active = 1;
+    go_modern_trace("OSK open mode=%d", g_osk_mode);
     return 0;
 }
 
@@ -114,26 +121,29 @@ int go_osk_update(void)
     if (!g_osk_active)
         return OSK_STATE_IDLE;
 
-    sceUtilityOskUpdate(1);
     status = sceUtilityOskGetStatus();
-
-    if (status == PSP_UTILITY_DIALOG_QUIT) {
-        /* User confirmed — OSK is transitioning out. Start shutdown,
-         * keep polling (return RUNNING) so next frame sees FINISHED. */
-        sceUtilityOskShutdownStart();
+    if (status != g_osk_last_status) {
+        go_modern_trace("OSK status=%d result=%d shutdown=%d", status,
+                        g_osk_data.result, g_osk_shutdown);
+        g_osk_last_status = status;
     }
 
-    if (status == PSP_UTILITY_DIALOG_FINISHED) {
-        /* Read result */
-        if (g_osk_data.result == PSP_UTILITY_OSK_RESULT_CHANGED) {
-            sceUtilityOskShutdownStart();
-            g_osk_active = 0;
-            return OSK_STATE_DONE;
-        } else {
-            sceUtilityOskShutdownStart();
-            g_osk_active = 0;
-            return OSK_STATE_CANCELLED;
-        }
+    /* Follow PSPSDK's utility lifecycle exactly. Calling Update while the
+     * dialog is QUIT/FINISHED (the old wrapper did this every frame) can keep
+     * a real PSP's utility surface alive as a permanent black screen. */
+    if (status == PSP_UTILITY_DIALOG_VISIBLE) {
+        sceUtilityOskUpdate(1);
+    } else if (status == PSP_UTILITY_DIALOG_QUIT && !g_osk_shutdown) {
+        g_osk_shutdown = 1;
+        sceUtilityOskShutdownStart();
+    } else if (status == PSP_UTILITY_DIALOG_NONE && g_osk_shutdown) {
+        /* The utility owns this result buffer until shutdown is complete. */
+        g_osk_result = g_osk_data.result;
+        g_osk_active = 0;
+        go_modern_trace("OSK closed result=%d text0=%u", g_osk_result,
+                        (unsigned int)g_osk_outtext[0]);
+        return g_osk_result == PSP_UTILITY_OSK_RESULT_CANCELLED
+               ? OSK_STATE_CANCELLED : OSK_STATE_DONE;
     }
     return OSK_STATE_RUNNING;
 }

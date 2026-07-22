@@ -203,6 +203,14 @@ void go_input_poll(void)
          * Transitions are handled in go_gui_render. */
         break;
 
+    case SCR_SEARCHING:
+        /* The request has bounded transport timeouts. Cross immediately
+         * restores the list so even a slow access point cannot trap the user
+         * on a modal-looking status screen. The worker may still complete and
+         * publish its result afterward. */
+        if (pressed & PSP_CTRL_CROSS) g_screen = SCR_RESULTS;
+        break;
+
     case SCR_RESULTS:
         /* List-view Select calls FUN_0001ad8c: advance the descriptor index
          * modulo the complete native+JS registry and launch page one. */

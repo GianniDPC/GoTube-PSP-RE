@@ -849,7 +849,8 @@ void go_gui_render(void)
         /* The original loop calls FUN_00023ef8 before the active state's
          * renderer every frame.  Thus video/overlays remain beneath a list
          * panel while it eases among full, multiview and off-screen targets. */
-        if (g_screen == SCR_RESULTS || g_screen == SCR_MENU ||
+        if (g_screen == SCR_RESULTS || g_screen == SCR_SEARCHING ||
+            g_screen == SCR_MENU ||
             g_screen == SCR_SITELIST || g_screen == SCR_PLAYER) {
             if (go_player_state() == 1 || go_player_state() == 2 ||
                 go_player_state() == 3) {
@@ -923,6 +924,9 @@ void go_gui_render(void)
             } else {
                 strncpy(g_search_keyword, entered, sizeof(g_search_keyword) - 1);
                 g_search_keyword[sizeof(g_search_keyword) - 1] = 0;
+                go_modern_trace("OSK dispatch search bytes=%d source=%.32s",
+                                (int)strlen(g_search_keyword),
+                                g_site_count ? g_site_names[g_site_sel] : "");
                 go_search_page(1);
             }
             g_osk_mode = 0;

@@ -43,6 +43,7 @@ int user_main(SceSize args, void *argp)
 
     /* A NULL context installs only Favorites, Playlist, Onsen and YouTube. */
     go_native_registry_init();
+    go_modern_trace("BOOT GoTube 1.2 RE native providers=%d", g_site_count);
 
     /* FUN_0001e05c selects native descriptor zero (Favorites) before the
      * first main-state descriptor is installed.  Its literal "PSP" query is

@@ -89,3 +89,8 @@ If it fails, the failure boundary should be logged at TLS connect, HTTP status,
 JSON parse, format selection, MP4 demux, first decoded video frame, or first
 audio frame. Those are stable diagnostic stages; arbitrary renderer changes
 are not part of this work.
+
+The modern branch writes these bounded stages to
+`ms0:/PSP/GAME/GoTube/modern.log`. The file is truncated on the first modern
+operation after each boot and contains no signed media URLs, visitor tokens,
+search response bodies, or video contents.

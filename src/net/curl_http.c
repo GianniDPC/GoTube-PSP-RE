@@ -22,6 +22,24 @@ typedef struct {
 
 static volatile int curl_state;
 
+void go_modern_trace(const char *format, ...)
+{
+    static int initialized;
+    char line[512];
+    va_list args;
+    int fd, length, flags = PSP_O_WRONLY | PSP_O_CREAT;
+    va_start(args, format);
+    vsnprintf(line, sizeof(line), format, args);
+    va_end(args);
+    length = strlen(line);
+    if (length + 1 < (int)sizeof(line)) line[length++] = '\n';
+    if (!initialized) flags |= PSP_O_TRUNC;
+    else flags |= PSP_O_APPEND;
+    fd = sceIoOpen("ms0:/PSP/GAME/GoTube/modern.log", flags, 0777);
+    if (fd >= 0) { sceIoWrite(fd, line, length); sceIoClose(fd); }
+    initialized = 1;
+}
+
 static int curl_init_once(void)
 {
     if (curl_state == 2) return 0;
@@ -80,12 +98,15 @@ char *go_curl_post_json(const char *url, const char *json,
     CurlBody body;
     struct curl_slist *headers = NULL;
     char visitor_header[1024];
+    char error[CURL_ERROR_SIZE] = "";
     if (size) *size = 0;
     memset(&body, 0, sizeof(body));
     if (!url || !json || ensure_network() < 0 || curl_init_once() < 0) return NULL;
     curl = curl_easy_init();
     if (!curl) return NULL;
     curl_common(curl, url);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 45L);
+    curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, error);
     headers = curl_slist_append(headers, "Content-Type: application/json");
     headers = curl_slist_append(headers, "X-YouTube-Client-Name: 28");
     headers = curl_slist_append(headers, "X-YouTube-Client-Version: 1.65.10");
@@ -98,9 +119,13 @@ char *go_curl_post_json(const char *url, const char *json,
     curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, (long)strlen(json));
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, body_write);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &body);
+    go_modern_trace("HTTP POST begin visitor=%d bytes=%d", visitor && visitor[0],
+                    (int)strlen(json));
     result = curl_easy_perform(curl);
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status);
     curl_slist_free_all(headers); curl_easy_cleanup(curl);
+    go_modern_trace("HTTP POST end curl=%d status=%ld response=%d limit=%d error=%s",
+                    result, status, body.size, body.failed, error);
     if (result != CURLE_OK || status != 200 || body.failed) {
         free(body.data); return NULL;
     }
@@ -135,6 +160,7 @@ static int stream_thread(SceSize args, void *argp)
     CurlStream *stream = *(CurlStream **)argp;
     CURL *curl = curl_easy_init();
     CURLcode result = CURLE_FAILED_INIT;
+    go_modern_trace("STREAM worker begin");
     if (curl) {
         curl_common(curl, stream->url);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, stream_write);
@@ -143,6 +169,7 @@ static int stream_thread(SceSize args, void *argp)
         curl_easy_cleanup(curl);
     }
     stream->error = !stream->cancel && result != CURLE_OK;
+    go_modern_trace("STREAM worker end curl=%d cancel=%d", result, stream->cancel);
     stream->done = 1;
     sceKernelExitThread(0);
     return 0;

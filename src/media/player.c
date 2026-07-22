@@ -268,6 +268,8 @@ static int decode_file(const char *path, int remote)
     pipeline.codec_lock = -1;
 
     av_register_all();
+    go_modern_trace("PLAYER demux begin remote=%d modern_mp4=%d", remote,
+                    remote && strstr(path, "itag=18") != NULL);
     if (remote) {
         AVInputFormat *input = strstr(path, "itag=18") ?
             av_find_input_format("mov,mp4,m4a,3gp,3g2,mj2") :
@@ -281,7 +283,11 @@ static int decode_file(const char *path, int remote)
         io.is_streamed = 1;
         if (av_open_input_stream(&format, &io, path, input, NULL) < 0) goto fail;
     } else if (av_open_input_file(&format, path, NULL, 0, NULL) < 0) goto fail;
-    if (av_find_stream_info(format) < 0) goto fail;
+    if (av_find_stream_info(format) < 0) {
+        go_modern_trace("PLAYER stream_info failed");
+        goto fail;
+    }
+    go_modern_trace("PLAYER stream_info ok streams=%d", (int)format->nb_streams);
     if (format->duration > 0)
         player_duration_value = (int)(format->duration / (AV_TIME_BASE / 100));
     for (i = 0; i < (int)format->nb_streams; i++) {
@@ -418,6 +424,7 @@ static int decode_file(const char *path, int remote)
     return player_cancel ? -1 : 0;
 
 fail:
+    go_modern_trace("PLAYER decode failed status=%d", player_status);
     packet_queue_abort(&pipeline.video_q);
     packet_queue_abort(&pipeline.audio_q);
     if (video_thread >= 0) { sceKernelWaitThreadEnd(video_thread, NULL); sceKernelDeleteThread(video_thread); }

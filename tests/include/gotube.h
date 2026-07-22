@@ -14,4 +14,5 @@ extern int g_result_count, g_result_total, g_result_start, g_result_end;
 extern char g_site_names[64][1024];
 extern int g_site_sel, g_site_count;
 char *go_curl_post_json(const char *, const char *, const char *, int *);
+void go_modern_trace(const char *, ...);
 #endif

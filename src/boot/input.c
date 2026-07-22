@@ -39,7 +39,7 @@ static int start_video(const GTVideo *video)
     return go_player_start(g_video_url);
 }
 
-static void search_page(int page)
+void go_search_page(int page)
 {
     if (page < 1 || g_site_count < 1) return;
     g_current_page = page;
@@ -93,12 +93,12 @@ void go_input_poll(void)
              * once-per-frame cached flag may not be refreshed until later in
              * this loop. */
             g_net_online = 1;
-            search_page(page);
+            go_search_page(page);
         }
     }
 
     if (g_source_delay > 0 && --g_source_delay == 0)
-        search_page(1);
+        go_search_page(1);
 
     sceCtrlPeekBufferPositive(&pad, 1);
     buttons = pad.Buttons;
@@ -163,10 +163,10 @@ void go_input_poll(void)
             if (g_result_sel < g_result_count - 1) g_result_sel++;
         }
         if ((pressed & PSP_CTRL_LTRIGGER) && g_result_start > 1)
-            search_page(g_current_page > 1 ? g_current_page - 1 : 1);
+            go_search_page(g_current_page > 1 ? g_current_page - 1 : 1);
         if ((pressed & PSP_CTRL_RTRIGGER) &&
             g_result_end > 0 && g_result_end < g_result_total)
-            search_page(g_current_page + 1);
+            go_search_page(g_current_page + 1);
         /* FUN_0002097c uses 0x2000 (Circle) to activate the selected node.
          * GoTube follows the Japanese accept-button convention. */
         if (pressed & PSP_CTRL_CIRCLE) {
@@ -266,7 +266,7 @@ void go_input_poll(void)
                 strncpy(g_search_keyword, g_menu_labels[g_menu_sel],
                         sizeof(g_search_keyword) - 1);
                 g_search_keyword[sizeof(g_search_keyword) - 1] = 0;
-                search_page(1);
+                go_search_page(1);
                 go_menu_close(SCR_RESULTS);
             } else if (action == GT_MENU_SITE) {
                 /* Action 0x6f only starts the menu close animation; source

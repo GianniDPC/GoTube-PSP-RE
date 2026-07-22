@@ -49,6 +49,7 @@ int go_curl_stream_read(void *stream, unsigned char *buffer, int size);
 void go_curl_stream_close(void *stream);
 int go_curl_download(const char *url, const char *path,
                      volatile int *progress, volatile int *cancel);
+void go_modern_trace(const char *format, ...);
 void *go_http_stream_open(const char *url);
 int go_http_stream_read(void *stream, unsigned char *buffer, int size);
 void go_http_stream_close(void *stream);
@@ -165,6 +166,7 @@ int   go_gui_origin_y(void);
 
 /* --- subsystem ticks --- */
 void  go_input_poll(void);
+void  go_search_page(int page);
 void  go_audio_tick(void);
 void  go_network_tick(void);
 int go_video_output_poll(void);

@@ -913,17 +913,7 @@ void go_gui_render(void)
             } else {
                 strncpy(g_search_keyword, entered, sizeof(g_search_keyword) - 1);
                 g_search_keyword[sizeof(g_search_keyword) - 1] = 0;
-                g_screen = SCR_SEARCHING;
-                go_thumbnails_reset();
-                if (go_source_is_favorites() || go_source_is_playlist())
-                    g_result_count = go_source_load(1);
-                else if (go_source_is_onsen())
-                    g_result_count = go_onsen_search(g_search_keyword);
-                else
-                    g_result_count = go_callgate_search(
-                        g_cx, g_site_names[g_site_sel], g_search_keyword, 1);
-                g_result_sel = 0;
-                g_screen = SCR_RESULTS;
+                go_search_page(1);
             }
             g_osk_mode = 0;
         } else if (st == 3) {             /* OSK_STATE_CANCELLED */
@@ -935,17 +925,7 @@ void go_gui_render(void)
                 g_osk_mode = 0;
             } else {
                 strcpy(g_search_keyword, "test");
-                g_screen = SCR_SEARCHING;
-                go_thumbnails_reset();
-                if (go_source_is_favorites() || go_source_is_playlist())
-                    g_result_count = go_source_load(1);
-                else if (go_source_is_onsen())
-                    g_result_count = go_onsen_search(g_search_keyword);
-                else
-                    g_result_count = go_callgate_search(
-                        g_cx, g_site_names[g_site_sel], g_search_keyword, 1);
-                g_result_sel = 0;
-                g_screen = SCR_RESULTS;
+                go_search_page(1);
             }
         }
     }

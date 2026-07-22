@@ -6,6 +6,8 @@ char g_site_names[64][1024];
 int g_site_sel, g_site_count;
 static const char *search_path, *player_path;
 
+void go_modern_trace(const char *format, ...) { (void)format; }
+
 char *go_curl_post_json(const char *url, const char *request,
                         const char *visitor, int *size)
 {

@@ -166,6 +166,8 @@ int go_modern_search(const char *keyword, int page)
 {
     char escaped[384], *request, *json, *p, *end;
     int size = 0, count = 0, first;
+    go_modern_trace("SEARCH begin page=%d keyword_bytes=%d visitor=%d", page,
+                    keyword ? (int)strlen(keyword) : 0, visitor_data[0] != 0);
     if (page < 1 || page > 50) return 0;
     json_escape(keyword && keyword[0] ? keyword : "PSP", escaped, sizeof(escaped));
     request = malloc(4096); if (!request) return -1;
@@ -180,7 +182,8 @@ int go_modern_search(const char *keyword, int page)
                  continuation[page - 1], CLIENT_JSON, visitor_data);
     }
     json = go_curl_post_json(SEARCH_API, request, visitor_data, &size);
-    free(request); if (!json) return -1;
+    free(request);
+    if (!json) { go_modern_trace("SEARCH failed transport"); return -1; }
     end = json + size; remember_visitor(json, end);
     p = json;
     while (count < 10 && (p = (char *)bounded_find(p, end, "\"compactVideoRenderer\""))) {
@@ -212,6 +215,9 @@ int go_modern_search(const char *keyword, int page)
     g_result_count = count; g_result_start = count ? first : 0;
     g_result_end = count ? first + count - 1 : 0;
     g_result_total = g_result_end + (continuation[page][0] ? 1 : 0);
+    go_modern_trace("SEARCH end results=%d range=%d-%d more=%d visitor=%d",
+                    count, g_result_start, g_result_end,
+                    continuation[page][0] != 0, visitor_data[0] != 0);
     return count;
 }
 
@@ -223,6 +229,8 @@ int go_modern_resolve(const char *value, char *out, int out_size)
     if (!value || !out || out_size < 16) return -1;
     if (strncmp(id, "yt:", 3) == 0) id += 3;
     if (strlen(id) != 11) return -1;
+    go_modern_trace("RESOLVE begin id_length=%d visitor=%d", (int)strlen(id),
+                    visitor_data[0] != 0);
     for (attempt = 0; attempt < 2; attempt++) {
         snprintf(request, sizeof(request), "{\"videoId\":\"%s\",\"context\":{\"client\":{%s%s%s%s}}}",
                  id, CLIENT_JSON, visitor_data[0] ? ",\"visitorData\":\"" : "",
@@ -239,11 +247,14 @@ int go_modern_resolve(const char *value, char *out, int out_size)
             itag = number;
         }
         if (itag && json_value(itag, end, "url", out, out_size) > 0) {
+            go_modern_trace("RESOLVE itag18 url_bytes=%d attempt=%d",
+                            (int)strlen(out), attempt + 1);
             free(json); return strlen(out);
         }
         free(json);
         if (!visitor_data[0] || strcmp(visitor_before, visitor_data) == 0) break;
     }
     out[0] = 0;
+    go_modern_trace("RESOLVE unsupported no_itag18");
     return -1;
 }

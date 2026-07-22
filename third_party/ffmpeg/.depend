@@ -1,0 +1,23 @@
+cmdutils.o: cmdutils.c \
+ /home/gianni/Desktop/PSP/workplace/third_party/ffmpeg/libavformat/avformat.h \
+ /home/gianni/Desktop/PSP/workplace/third_party/ffmpeg/libavcodec/avcodec.h \
+ /home/gianni/Desktop/PSP/workplace/third_party/ffmpeg/libavutil/avutil.h \
+ /home/gianni/Desktop/PSP/workplace/third_party/ffmpeg/libavutil/common.h \
+ /home/gianni/Desktop/PSP/workplace/third_party/ffmpeg/config.h \
+ /home/gianni/Desktop/PSP/workplace/third_party/ffmpeg/libavutil/internal.h \
+ /home/gianni/Desktop/PSP/workplace/third_party/ffmpeg/libavutil/intreadwrite.h \
+ /home/gianni/Desktop/PSP/workplace/third_party/ffmpeg/libavutil/bswap.h \
+ /home/gianni/Desktop/PSP/workplace/third_party/ffmpeg/libavutil/mem.h \
+ /home/gianni/Desktop/PSP/workplace/third_party/ffmpeg/libavutil/mathematics.h \
+ /home/gianni/Desktop/PSP/workplace/third_party/ffmpeg/libavutil/rational.h \
+ /home/gianni/Desktop/PSP/workplace/third_party/ffmpeg/libavutil/integer.h \
+ /home/gianni/Desktop/PSP/workplace/third_party/ffmpeg/libavutil/intfloat_readwrite.h \
+ /home/gianni/Desktop/PSP/workplace/third_party/ffmpeg/libavutil/log.h \
+ /home/gianni/Desktop/PSP/workplace/third_party/ffmpeg/libavformat/avio.h \
+ /home/gianni/Desktop/PSP/workplace/third_party/ffmpeg/libavformat/rtp.h \
+ /home/gianni/Desktop/PSP/workplace/third_party/ffmpeg/libavformat/avformat.h \
+ /home/gianni/Desktop/PSP/workplace/third_party/ffmpeg/libavformat/rtsp.h \
+ /home/gianni/Desktop/PSP/workplace/third_party/ffmpeg/libavformat/rtspcodes.h \
+ /home/gianni/Desktop/PSP/workplace/third_party/ffmpeg/libavformat/os_support.h \
+ cmdutils.h \
+ /home/gianni/Desktop/PSP/workplace/third_party/ffmpeg/libavutil/avstring.h

@@ -1,0 +1,19 @@
+# Build products
+*.o
+*.elf
+*.prx
+*.PBP
+PARAM.SFO
+/release/
+!/runtime/dvemgr.prx
+!/runtime/mediaengine.prx
+
+# Local reverse-engineering projects, reports, dumps and recovery snapshots
+/re/
+/tools/
+/recovery_snapshots/
+/Original_GoTube1_2/
+
+# Editor/OS files
+.DS_Store
+*.swp

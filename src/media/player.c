@@ -1,0 +1,684 @@
+/* GoTube FLV playback pipeline.
+ * FFmpeg baseline: GT12-MEDIA-0001 (Lavc51.40.4/Lavf51.12.1). */
+#include "gotube.h"
+#include <pspaudio.h>
+#include <malloc.h>
+#include <libavformat/avformat.h>
+#include <libavcodec/avcodec.h>
+#include <libavformat/avio.h>
+
+#define Y_STRIDE_MAX 768
+#define Y_HEIGHT_MAX 512
+#define UV_STRIDE_MAX (Y_STRIDE_MAX / 2)
+#define UV_HEIGHT_MAX (Y_HEIGHT_MAX / 2)
+
+/* FUN_00023ef8 consumes the decoder's three 8-bit Y/V/U planes directly as
+ * GU_PSM_T8 textures.  Keep the same plane contract instead of manufacturing
+ * a 32-bit RGB texture (which is not the native player path). */
+static const unsigned char *frame_y_ptr;
+static const unsigned char *frame_v_ptr;
+static const unsigned char *frame_u_ptr;
+static volatile int frame_index = -1;
+static volatile int frame_width = 0;
+static volatile int frame_height = 0;
+static volatile int frame_y_stride = 0;
+static volatile int frame_uv_stride = 0;
+static volatile int player_status = 0;
+static volatile int player_progress_value = 0;
+static volatile int player_cancel = 0;
+static volatile int player_pause = 0;
+static SceUID player_thread = -1;
+static char player_url[1024];
+static char player_source_url[512];
+static int player_local_file = 0;
+static int player_frames_decoded = 0;
+static volatile int player_time_value = 0;
+static volatile int player_duration_value = 0;
+/* Shared dispatcher VA 0x2097c: Triangle cycles five overlay states and
+ * Select increments the renderer's 0..14 vertical-position mode. */
+static int player_overlay_mode = 3;
+static int player_render_mode = 0;
+static int player_speed_mode = 10;
+
+/* The original player does not decode in its demux thread.  FUN_0002220c
+ * queues packets and the workers at 0x231c4 (video) and 0x25424 (audio)
+ * consume them independently. */
+typedef struct PlayerPacketNode {
+    AVPacket packet;
+    struct PlayerPacketNode *next;
+} PlayerPacketNode;
+
+typedef struct {
+    PlayerPacketNode *head, *tail;
+    volatile int bytes, ended, abort;
+    SceUID lock;
+} PlayerPacketQueue;
+
+typedef struct {
+    PlayerPacketQueue video_q, audio_q;
+    AVCodecContext *video, *audio;
+    AVFrame *picture;
+    AVRational video_time_base;
+    int audio_reserved, audio_frame_samples;
+    SceUID codec_lock;
+    volatile int failed;
+} PlayerPipeline;
+
+static void packet_queue_init(PlayerPacketQueue *q, const char *name)
+{
+    memset(q, 0, sizeof(*q));
+    q->lock = sceKernelCreateSema(name, 0, 1, 1, NULL);
+}
+
+static void packet_queue_finish(PlayerPacketQueue *q) { q->ended = 1; }
+static void packet_queue_abort(PlayerPacketQueue *q) { q->abort = 1; }
+
+static int packet_queue_put(PlayerPacketQueue *q, AVPacket *packet)
+{
+    PlayerPacketNode *node;
+    /* Original prebuffer loop limits each stream to 0x80000 before dispatch. */
+    while (!player_cancel && !q->abort && q->bytes + packet->size > 0x80000)
+        sceKernelDelayThreadCB(1000);
+    if (player_cancel || q->abort) return -1;
+    node = malloc(sizeof(*node));
+    if (!node) return -1;
+    node->packet = *packet;
+    node->next = NULL;
+    if (sceKernelWaitSema(q->lock, 1, NULL) < 0) {
+        free(node);
+        return -1;
+    }
+    if (q->tail) q->tail->next = node; else q->head = node;
+    q->tail = node;
+    q->bytes += packet->size;
+    sceKernelSignalSema(q->lock, 1);
+    /* Transfer ownership.  av_read_frame packets already use the owning
+     * destructor; duplicating the struct and then freeing the source would
+     * invalidate the queued payload. */
+    packet->data = NULL;
+    packet->size = 0;
+    packet->destruct = NULL;
+    return 0;
+}
+
+/* 1=packet, 0=end, -1=abort. */
+static int packet_queue_get(PlayerPacketQueue *q, AVPacket *packet)
+{
+    for (;;) {
+        PlayerPacketNode *node = NULL;
+        if (q->abort || player_cancel) return -1;
+        if (sceKernelWaitSema(q->lock, 1, NULL) < 0) return -1;
+        if (q->head) {
+            node = q->head;
+            q->head = node->next;
+            if (!q->head) q->tail = NULL;
+            q->bytes -= node->packet.size;
+        }
+        sceKernelSignalSema(q->lock, 1);
+        if (node) {
+            *packet = node->packet;
+            free(node);
+            return 1;
+        }
+        if (q->ended) return 0;
+        sceKernelDelayThreadCB(1000);
+    }
+}
+
+static void packet_queue_destroy(PlayerPacketQueue *q)
+{
+    PlayerPacketNode *node, *next;
+    q->abort = 1;
+    node = q->head;
+    while (node) {
+        next = node->next;
+        av_free_packet(&node->packet);
+        free(node);
+        node = next;
+    }
+    q->head = q->tail = NULL;
+    if (q->lock >= 0) sceKernelDeleteSema(q->lock);
+    q->lock = -1;
+}
+
+#ifdef GT_VIDEO_HW_DEBUG
+static int video_debug_dumped;
+static void video_debug_avlog(void *opaque, int level, const char *fmt, va_list args)
+{
+    char line[240];
+    (void)opaque;
+    if (level > AV_LOG_WARNING) return;
+    vsnprintf(line, sizeof(line), fmt, args);
+    gt_trace(line);
+}
+static void dump_video_debug_frame(int slot, int width, int height,
+                                   int y_stride, int uv_stride)
+{
+    int row, col, y_min = 255, y_max = 0, u_min = 255, u_max = 0;
+    int v_min = 255, v_max = 0;
+    char report[512];
+    SceUID fd;
+    for (row = 0; row < height; row += 4)
+        for (col = 0; col < width; col += 4) {
+            int value = frame_y_ptr[row * y_stride + col];
+            if (value < y_min) y_min = value;
+            if (value > y_max) y_max = value;
+        }
+    for (row = 0; row < (height + 1) / 2; row += 2)
+        for (col = 0; col < (width + 1) / 2; col += 2) {
+            int u = frame_u_ptr[row * uv_stride + col];
+            int v = frame_v_ptr[row * uv_stride + col];
+            if (u < u_min) u_min = u;
+            if (u > u_max) u_max = u;
+            if (v < v_min) v_min = v;
+            if (v > v_max) v_max = v;
+        }
+    snprintf(report, sizeof(report),
+             "frame=%d width=%d height=%d y_stride=%d uv_stride=%d\r\n"
+             "Y=%d..%d U=%d..%d V=%d..%d\r\n",
+             player_frames_decoded + 1, width, height, y_stride, uv_stride,
+             y_min, y_max, u_min, u_max, v_min, v_max);
+    if (player_frames_decoded == 0 || player_frames_decoded == 1 ||
+        player_frames_decoded == 9 || player_frames_decoded == 29)
+        gt_trace(report);
+    /* Frame 1 can be a decoder-delay/neutral frame.  Save frame 30, after the
+     * first second of this 30 fps sample, using only three large writes.  The
+     * old row-at-a-time PPM writer stalled real hardware for ~84 seconds. */
+    if (player_frames_decoded != 29) return;
+    video_debug_dumped = 1;
+    fd = sceIoOpen("ms0:/gotube-video-debug.txt",
+                   PSP_O_WRONLY | PSP_O_CREAT | PSP_O_TRUNC, 0777);
+    if (fd >= 0) { sceIoWrite(fd, report, strlen(report)); sceIoClose(fd); }
+    fd = sceIoOpen("ms0:/gotube-video-y.raw",
+                   PSP_O_WRONLY | PSP_O_CREAT | PSP_O_TRUNC, 0777);
+    if (fd >= 0) { sceIoWrite(fd, frame_y_ptr, y_stride * height); sceIoClose(fd); }
+    fd = sceIoOpen("ms0:/gotube-video-v.raw",
+                   PSP_O_WRONLY | PSP_O_CREAT | PSP_O_TRUNC, 0777);
+    if (fd >= 0) { sceIoWrite(fd, frame_v_ptr, uv_stride * ((height + 1) / 2)); sceIoClose(fd); }
+    fd = sceIoOpen("ms0:/gotube-video-u.raw",
+                   PSP_O_WRONLY | PSP_O_CREAT | PSP_O_TRUNC, 0777);
+    if (fd >= 0) { sceIoWrite(fd, frame_u_ptr, uv_stride * ((height + 1) / 2)); sceIoClose(fd); }
+}
+#endif
+
+static void release_audio_src(void)
+{
+    int retries = 100;
+    /* Blocking output returns when the buffer has been submitted; hardware may
+     * still be draining its final samples before the SRC channel is releasable. */
+    sceKernelDelayThread(50000);
+    while (sceAudioSRCChRelease() < 0 && --retries > 0)
+        sceKernelDelayThread(10000);
+}
+
+static void publish_yuv420(const AVFrame *frame, int width, int height)
+{
+    int y_stride = frame->linesize[0];
+    int uv_height = (height + 1) >> 1;
+    int uv_stride = frame->linesize[1];
+    if (width > Y_STRIDE_MAX || height > Y_HEIGHT_MAX) return;
+    if (!frame->data[0] || !frame->data[1] || !frame->data[2] ||
+        y_stride <= 0 || uv_stride <= 0 || frame->linesize[2] != uv_stride) return;
+    frame_y_ptr = frame->data[0];
+    frame_v_ptr = frame->data[2];
+    frame_u_ptr = frame->data[1];
+    sceKernelDcacheWritebackRange(frame_y_ptr, y_stride * height);
+    sceKernelDcacheWritebackRange(frame_v_ptr, uv_stride * uv_height);
+    sceKernelDcacheWritebackRange(frame_u_ptr, uv_stride * uv_height);
+    frame_width = width;
+    frame_height = height;
+    frame_y_stride = y_stride;
+    frame_uv_stride = uv_stride;
+#ifdef GT_VIDEO_HW_DEBUG
+    if (!video_debug_dumped)
+        dump_video_debug_frame(0, width, height, y_stride, uv_stride);
+#endif
+    frame_index = 0;
+    player_frames_decoded++;
+    if (player_frames_decoded == 1)
+        gt_trace("player first frame");
+}
+
+static int stream_read_packet(void *opaque, uint8_t *buffer, int size)
+{
+    if (player_cancel) return -1;
+    return go_http_stream_read(opaque, buffer, size);
+}
+
+static int video_decode_worker(SceSize args, void *argp)
+{
+    PlayerPipeline *pipeline = *(PlayerPipeline **)argp;
+    AVPacket packet;
+    int64_t first_pts = (int64_t)AV_NOPTS_VALUE;
+    uint64_t clock_start = 0;
+    int debug_packets = 0;
+    (void)args;
+    while (packet_queue_get(&pipeline->video_q, &packet) == 1) {
+        int left = packet.size, got_picture = 0;
+        unsigned char *data = packet.data;
+        int64_t stamp = packet.pts != (int64_t)AV_NOPTS_VALUE ? packet.pts : packet.dts;
+        if (stamp != (int64_t)AV_NOPTS_VALUE) {
+            uint64_t now = sceKernelGetSystemTimeWide();
+            player_time_value = (int)(stamp * av_q2d(pipeline->video_time_base) * 100.0) + 100;
+            if (!pipeline->audio) {
+                if (first_pts == (int64_t)AV_NOPTS_VALUE) { first_pts = stamp; clock_start = now; }
+                else {
+                    int64_t wait = (int64_t)((stamp - first_pts) *
+                                   av_q2d(pipeline->video_time_base) * 1000000.0) -
+                                   (int64_t)(now - clock_start);
+                    if (wait > 0) sceKernelDelayThread((unsigned int)wait);
+                }
+            }
+        }
+        while (left > 0 && !player_cancel) {
+            int used;
+            got_picture = 0;
+            sceKernelWaitSema(pipeline->codec_lock, 1, NULL);
+            used = avcodec_decode_video(pipeline->video, pipeline->picture,
+                                        &got_picture, data, left);
+            sceKernelSignalSema(pipeline->codec_lock, 1);
+#ifdef GT_VIDEO_HW_DEBUG
+            if (debug_packets < 12) {
+                char line[128];
+                snprintf(line, sizeof(line), "video packet=%d size=%d used=%d got=%d",
+                         debug_packets + 1, packet.size, used, got_picture);
+                gt_trace(line);
+            }
+#endif
+            if (used <= 0) break;
+            data += used;
+            left -= used;
+            if (got_picture && pipeline->video->pix_fmt == PIX_FMT_YUV420P)
+                publish_yuv420(pipeline->picture, pipeline->video->width,
+                               pipeline->video->height);
+        }
+        debug_packets++;
+        av_free_packet(&packet);
+    }
+    sceKernelExitThread(0);
+    return 0;
+}
+
+static int audio_decode_worker(SceSize args, void *argp)
+{
+    PlayerPipeline *pipeline = *(PlayerPipeline **)argp;
+    AVPacket packet;
+    (void)args;
+    /* Packets in this queue are already stereo PCM.  AAC decoding remains in
+     * the demux worker where the reconstructed FAAD path was proven on real
+     * hardware; only the blocking device write runs independently. */
+    while (packet_queue_get(&pipeline->audio_q, &packet) == 1) {
+        if (pipeline->audio_reserved &&
+            packet.size == pipeline->audio_frame_samples * 2 * (int)sizeof(short))
+            sceAudioSRCOutputBlocking(PSP_AUDIO_VOLUME_MAX, packet.data);
+        av_free_packet(&packet);
+    }
+    sceKernelExitThread(0);
+    return 0;
+}
+
+static int decode_file(const char *path, int remote)
+{
+    AVFormatContext *format = NULL;
+    AVCodecContext *video = NULL, *audio = NULL;
+    AVCodec *codec;
+    AVFrame *picture = NULL;
+    AVPacket packet;
+    int video_stream = -1, audio_stream = -1, audio_reserved = 0;
+    int audio_frame_samples = 1152;
+    int i;
+    short *audio_buffer = NULL;
+    short *stereo_buffer = NULL;
+    void *http_stream = NULL;
+    unsigned char *io_buffer = NULL;
+    ByteIOContext io;
+    int input_flags = 0;
+    AVInputFormat *stream_format = NULL;
+    PlayerPipeline pipeline;
+    PlayerPipeline *pipeline_arg = &pipeline;
+    SceUID video_thread = -1, audio_thread = -1;
+
+    memset(&pipeline, 0, sizeof(pipeline));
+    pipeline.video_q.lock = pipeline.audio_q.lock = -1;
+    pipeline.codec_lock = -1;
+
+    av_register_all();
+#ifdef GT_VIDEO_HW_DEBUG
+    av_log_set_level(AV_LOG_DEBUG);
+    av_log_set_callback(video_debug_avlog);
+#endif
+    if (remote) {
+        AVInputFormat *flv = av_find_input_format("flv");
+        stream_format = flv;
+        http_stream = go_http_stream_open(path);
+        io_buffer = av_malloc(32768);
+        if (!http_stream || !io_buffer || !flv) goto fail;
+        init_put_byte(&io, io_buffer, 32768, 0, http_stream,
+                      stream_read_packet, NULL, NULL);
+        io.is_streamed = 1;
+        if (av_open_input_stream(&format, &io, path, flv, NULL) < 0) goto fail;
+    } else if (av_open_input_file(&format, path, NULL, 0, NULL) < 0) goto fail;
+    if (av_find_stream_info(format) < 0) goto fail;
+    if (format->duration > 0)
+        player_duration_value = (int)(format->duration / (AV_TIME_BASE / 100));
+    for (i = 0; i < (int)format->nb_streams; i++) {
+        if (format->streams[i]->codec->codec_type == CODEC_TYPE_VIDEO && video_stream < 0)
+            video_stream = i;
+        if (format->streams[i]->codec->codec_type == CODEC_TYPE_AUDIO && audio_stream < 0)
+            audio_stream = i;
+    }
+    if (video_stream >= 0) {
+        video = format->streams[video_stream]->codec;
+        /* FUN_00022764 codec context contract. */
+        video->workaround_bugs = 1;
+        video->error_resilience = 1;
+        video->error_concealment = 3;
+        video->thread_count = 1;
+        video->lowres = 0;
+        video->idct_algo = 0;
+        video->debug = 0;
+        video->debug_mv = 0;
+        video->skip_loop_filter = AVDISCARD_NONE;
+        video->skip_idct = AVDISCARD_NONE;
+        video->skip_frame = AVDISCARD_NONE;
+        codec = avcodec_find_decoder(video->codec_id);
+        if (!codec || avcodec_open(video, codec) < 0) video = NULL;
+        else picture = avcodec_alloc_frame();
+    }
+    if (audio_stream >= 0) {
+        audio = format->streams[audio_stream]->codec;
+        codec = avcodec_find_decoder(audio->codec_id);
+        if (!codec || avcodec_open(audio, codec) < 0) audio = NULL;
+        else {
+            audio_buffer = memalign(64, AVCODEC_MAX_AUDIO_FRAME_SIZE);
+            stereo_buffer = memalign(64, AVCODEC_MAX_AUDIO_FRAME_SIZE * 2);
+            if (!audio_buffer || !stereo_buffer) goto fail;
+            if (audio->frame_size > 0) audio_frame_samples = audio->frame_size;
+            audio_reserved = sceAudioSRCChReserve(audio_frame_samples,
+                                                  audio->sample_rate, 2) >= 0;
+        }
+    }
+    if (!video && !audio) goto fail;
+    gt_trace(video ? "player video decoder open" : "player no video");
+    gt_trace(audio ? "player audio decoder open" : "player no audio");
+    pipeline.video = video;
+    pipeline.audio = audio;
+    pipeline.picture = picture;
+    pipeline.audio_reserved = audio_reserved;
+    pipeline.audio_frame_samples = audio_frame_samples;
+    if (video) pipeline.video_time_base = format->streams[video_stream]->time_base;
+    packet_queue_init(&pipeline.video_q, "GoTube.video.queue");
+    packet_queue_init(&pipeline.audio_q, "GoTube.audio.queue");
+    pipeline.codec_lock = sceKernelCreateSema("GoTube.codec.lock", 0, 1, 1, NULL);
+    if ((video && pipeline.video_q.lock < 0) || (audio && pipeline.audio_q.lock < 0)) goto fail;
+    if (pipeline.codec_lock < 0) goto fail;
+    if (video) {
+        /* Original video worker at 0x231c4. */
+        video_thread = sceKernelCreateThread("GoTube.video", video_decode_worker,
+                                             0x22, 0x10000,
+                                             PSP_THREAD_ATTR_USER | PSP_THREAD_ATTR_VFPU, NULL);
+        if (video_thread < 0 || sceKernelStartThread(video_thread, sizeof(pipeline_arg),
+                                                     &pipeline_arg) < 0) goto fail;
+    }
+    if (audio) {
+        /* Original audio worker at 0x25424. */
+        /* Original PCM/device worker contract at 0x25424. */
+        audio_thread = sceKernelCreateThread("GoTube.audio", audio_decode_worker,
+                                             0x1f, 0x10000,
+                                             PSP_THREAD_ATTR_USER, NULL);
+        if (audio_thread < 0 || sceKernelStartThread(audio_thread, sizeof(pipeline_arg),
+                                                     &pipeline_arg) < 0) goto fail;
+    }
+    player_status = 2;
+    while (!player_cancel && av_read_frame(format, &packet) >= 0) {
+        if (player_pause && !player_cancel) {
+            while (player_pause && !player_cancel)
+                sceKernelDelayThread(10000);
+        }
+        if (player_cancel) {
+            av_free_packet(&packet);
+            break;
+        }
+        if (video && packet.stream_index == video_stream) {
+            if (packet_queue_put(&pipeline.video_q, &packet) < 0) av_free_packet(&packet);
+        } else if (audio && packet.stream_index == audio_stream) {
+            int left = packet.size;
+            unsigned char *data = packet.data;
+            while (left > 0 && !player_cancel) {
+                int audio_size = AVCODEC_MAX_AUDIO_FRAME_SIZE;
+                int used = avcodec_decode_audio2(audio, audio_buffer, &audio_size, data, left);
+                if (used <= 0) break;
+                data += used;
+                left -= used;
+                if (audio_size > 0 && audio_reserved) {
+                    int samples = audio_size / (audio->channels * (int)sizeof(short));
+                    short *output = audio_buffer;
+                    AVPacket pcm;
+                    if (audio->channels == 1) {
+                        int n;
+                        for (n = 0; n < samples; n++) {
+                            stereo_buffer[n * 2] = audio_buffer[n];
+                            stereo_buffer[n * 2 + 1] = audio_buffer[n];
+                        }
+                        output = stereo_buffer;
+                    }
+                    if (samples == audio_frame_samples &&
+                        (audio->channels == 1 || audio->channels == 2) &&
+                        av_new_packet(&pcm, samples * 2 * (int)sizeof(short)) >= 0) {
+                        if (audio->channels == 2) memcpy(pcm.data, output, pcm.size);
+                        else memcpy(pcm.data, output, pcm.size);
+                        if (packet_queue_put(&pipeline.audio_q, &pcm) < 0)
+                            av_free_packet(&pcm);
+                    }
+                }
+            }
+        }
+        av_free_packet(&packet);
+    }
+    packet_queue_finish(&pipeline.video_q);
+    packet_queue_finish(&pipeline.audio_q);
+    if (video_thread >= 0) { sceKernelWaitThreadEnd(video_thread, NULL); sceKernelDeleteThread(video_thread); }
+    if (audio_thread >= 0) { sceKernelWaitThreadEnd(audio_thread, NULL); sceKernelDeleteThread(audio_thread); }
+    packet_queue_destroy(&pipeline.video_q);
+    packet_queue_destroy(&pipeline.audio_q);
+    if (pipeline.codec_lock >= 0) { sceKernelDeleteSema(pipeline.codec_lock); pipeline.codec_lock = -1; }
+    if (audio_reserved) release_audio_src();
+    if (audio_buffer) free(audio_buffer);
+    if (stereo_buffer) free(stereo_buffer);
+    if (picture) av_free(picture);
+    if (video) avcodec_close(video);
+    if (audio) avcodec_close(audio);
+    if (format) {
+        if (remote) { input_flags = format->iformat->flags; format->iformat->flags |= AVFMT_NOFILE; }
+        av_close_input_file(format);
+        if (remote) { stream_format->flags = input_flags; av_free(io_buffer); io_buffer = NULL; }
+    }
+    if (http_stream) go_http_stream_close(http_stream);
+    return player_cancel ? -1 : 0;
+
+fail:
+    packet_queue_abort(&pipeline.video_q);
+    packet_queue_abort(&pipeline.audio_q);
+    if (video_thread >= 0) { sceKernelWaitThreadEnd(video_thread, NULL); sceKernelDeleteThread(video_thread); }
+    if (audio_thread >= 0) { sceKernelWaitThreadEnd(audio_thread, NULL); sceKernelDeleteThread(audio_thread); }
+    packet_queue_destroy(&pipeline.video_q);
+    packet_queue_destroy(&pipeline.audio_q);
+    if (pipeline.codec_lock >= 0) { sceKernelDeleteSema(pipeline.codec_lock); pipeline.codec_lock = -1; }
+    if (audio_reserved) release_audio_src();
+    if (audio_buffer) free(audio_buffer);
+    if (stereo_buffer) free(stereo_buffer);
+    if (picture) av_free(picture);
+    if (video) avcodec_close(video);
+    if (audio) avcodec_close(audio);
+    if (format) {
+        if (remote) { input_flags = format->iformat->flags; format->iformat->flags |= AVFMT_NOFILE; }
+        av_close_input_file(format);
+        if (remote) { stream_format->flags = input_flags; av_free(io_buffer); io_buffer = NULL; }
+    }
+    if (io_buffer) av_free(io_buffer);
+    if (http_stream) go_http_stream_close(http_stream);
+    return -1;
+}
+
+static int player_worker(SceSize args, void *argp)
+{
+    (void)args; (void)argp;
+    player_status = 1;
+    gt_trace("player worker start");
+    player_status = decode_file(player_url, !player_local_file) < 0 ? -2 : 3;
+    gt_trace(player_status == 3 ? "player decode complete" : "player decode error");
+    sceKernelExitThread(0);
+    return 0;
+}
+
+int go_player_start(const char *url)
+{
+    if (!url || !url[0] ||
+        ((player_status == 1 || player_status == 2) && !player_cancel)) return -1;
+    if (player_thread >= 0) {
+        sceKernelWaitThreadEnd(player_thread, NULL);
+        sceKernelDeleteThread(player_thread);
+        player_thread = -1;
+    }
+    strncpy(player_url, url, sizeof(player_url) - 1);
+    player_url[sizeof(player_url) - 1] = 0;
+    player_local_file = 0;
+    player_cancel = 0;
+    player_pause = 0;
+    player_progress_value = 0;
+    frame_index = -1;
+    player_frames_decoded = 0;
+    player_time_value = 0;
+    player_duration_value = 0;
+#ifdef GT_VIDEO_HW_DEBUG
+    video_debug_dumped = 0;
+#endif
+    /* FUN_00021e54: original decoder worker priority 0x22, stack 0x40000,
+     * attributes 0x80004000 (USER | VFPU).  H.264 Main decoding exceeds the
+     * smaller reconstruction stack after its first delayed frame. */
+    player_thread = sceKernelCreateThread("GoTube.player", player_worker,
+                                          0x22, 0x40000,
+                                          PSP_THREAD_ATTR_USER | PSP_THREAD_ATTR_VFPU, NULL);
+    if (player_thread < 0) return player_thread;
+    player_status = 1;
+    {
+        int ret = sceKernelStartThread(player_thread, 0, NULL);
+        if (ret < 0) {
+            sceKernelDeleteThread(player_thread);
+            player_thread = -1;
+            player_status = -1;
+        }
+        return ret;
+    }
+}
+
+int go_player_start_file(const char *path)
+{
+    int ret;
+    if (!path || !path[0] ||
+        ((player_status == 1 || player_status == 2) && !player_cancel)) return -1;
+    if (player_thread >= 0) {
+        sceKernelWaitThreadEnd(player_thread, NULL);
+        sceKernelDeleteThread(player_thread);
+        player_thread = -1;
+    }
+    strncpy(player_url, path, sizeof(player_url) - 1);
+    player_url[sizeof(player_url) - 1] = 0;
+    player_local_file = 1;
+    player_cancel = 0;
+    player_pause = 0;
+    player_progress_value = 1000;
+    frame_index = -1;
+    player_frames_decoded = 0;
+    player_time_value = 0;
+    player_duration_value = 0;
+#ifdef GT_VIDEO_HW_DEBUG
+    video_debug_dumped = 0;
+#endif
+    go_comments_load_for_media(path);
+    player_thread = sceKernelCreateThread("GoTube.player.test", player_worker,
+                                          0x22, 0x40000,
+                                          PSP_THREAD_ATTR_USER | PSP_THREAD_ATTR_VFPU, NULL);
+    if (player_thread < 0) return player_thread;
+    player_status = 1;
+    ret = sceKernelStartThread(player_thread, 0, NULL);
+    if (ret < 0) {
+        sceKernelDeleteThread(player_thread);
+        player_thread = -1;
+        player_status = -1;
+    }
+    return ret;
+}
+
+void go_player_stop(void)
+{
+    player_cancel = 1;
+    player_pause = 0;
+}
+
+void go_player_toggle_pause(void)
+{
+    if (player_status == 2) player_pause = !player_pause;
+}
+
+void go_player_cycle_overlay(void)
+{
+    player_overlay_mode = (player_overlay_mode + 1) % 5;
+}
+
+void go_player_cycle_render_mode(void)
+{
+    player_render_mode = (player_render_mode + 1) % 15;
+}
+
+void go_player_cycle_speed(int direction)
+{
+    if (direction < 0) {
+        if (player_speed_mode == 20) player_speed_mode = 10;
+        else if (player_speed_mode == 10) player_speed_mode = 5;
+    } else {
+        if (player_speed_mode == 5) player_speed_mode = 10;
+        else if (player_speed_mode == 10) player_speed_mode = 20;
+    }
+}
+
+int go_player_overlay_mode(void) { return player_overlay_mode; }
+int go_player_render_mode(void) { return player_render_mode; }
+int go_player_speed_mode(void) { return player_speed_mode; }
+void go_player_set_render_mode(int mode)
+{
+    player_render_mode = mode >= 0 ? mode % 15 : 0;
+}
+
+int go_player_paused(void) { return player_pause; }
+
+int go_player_state(void) { return player_status; }
+int go_player_progress(void) { return player_progress_value; }
+int go_player_time_cs(void) { return player_time_value; }
+int go_player_duration_cs(void) { return player_duration_value; }
+void go_player_set_source_url(const char *url)
+{
+    snprintf(player_source_url, sizeof(player_source_url), "%s", url ? url : "");
+}
+int go_player_matches_source(const char *url)
+{
+    return url && url[0] && player_source_url[0] &&
+           (player_status == 1 || player_status == 2) &&
+           strcmp(url, player_source_url) == 0;
+}
+
+int go_player_planes(const unsigned char **y, const unsigned char **v,
+                     const unsigned char **u, int *width, int *height,
+                     int *y_stride, int *uv_stride)
+{
+    int index = frame_index;
+    if (index < 0) return 0;
+    if (y) *y = frame_y_ptr;
+    if (v) *v = frame_v_ptr;
+    if (u) *u = frame_u_ptr;
+    if (width) *width = frame_width;
+    if (height) *height = frame_height;
+    if (y_stride) *y_stride = frame_y_stride;
+    if (uv_stride) *uv_stride = frame_uv_stride;
+    return 1;
+}

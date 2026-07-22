@@ -1,0 +1,1824 @@
+# ./configure --cross-compile --cross-prefix=psp- --arch=mips --target-os=linux --extra-cflags=-Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include --extra-ldflags=-L/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/libfaad/.libs --enable-gpl --enable-libfaad --disable-encoders --disable-muxers --disable-decoders --enable-decoder=h263 --enable-decoder=flv --enable-decoder=mp3 --enable-decoder=h264 --enable-decoder=mpeg4aac --disable-demuxers --enable-demuxer=flv --enable-demuxer=mov --disable-protocols --enable-protocol=file --disable-network --disable-debug --disable-ffserver --disable-ffplay --disable-ffmpeg
+ARCH_EXT_LIST='
+    altivec
+    armv5te
+    armv6
+    iwmmxt
+    mmi
+    mmx
+    ssse3
+'
+ARCH_LIST='
+    alpha
+    armv4l
+    bfin
+    ia64
+    m68k
+    mips
+    parisc
+    powerpc
+    s390
+    sh4
+    sparc
+    sparc64
+    x86
+    x86_32
+    x86_64
+'
+BSF_LIST='dump_extradata_bsf
+remove_extradata_bsf
+noise_bsf
+mp3_header_compress_bsf
+mp3_header_decompress_bsf
+mjpega_dump_header_bsf
+imx_dump_header_bsf'
+BUN_INSTALL='/home/gianni/.bun'
+CFLAGS=' -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include'
+CLUTTER_IM_MODULE='ibus'
+CMDLINE_SELECT='
+    
+    altivec
+    armv5te
+    armv6
+    iwmmxt
+    mmi
+    mmx
+    ssse3
+
+    
+    audio_beos
+    audio_oss
+    avisynth
+    beos_netserver
+    bktr
+    bsfs
+    dc1394
+    decoders
+    demuxers
+    dv1394
+    encoders
+    ffmpeg
+    ffplay
+    ffserver
+    gpl
+    gprof
+    gray
+    ipv6
+    liba52
+    liba52bin
+    libamr
+    libamr_nb
+    libamr_wb
+    libfaac
+    libfaad
+    libfaadbin
+    libgsm
+    libmp3lame
+    libnut
+    libogg
+    libtheora
+    libvorbis
+    libx264
+    libxvid
+    memalign_hack
+    mpegaudio_hp
+    muxers
+    network
+    parsers
+    powerpc_perf
+    pp
+    protocols
+    small
+    swscaler
+    vhook
+    v4l
+    v4l2
+    x11grab
+    zlib
+
+    
+    beosthreads
+    pthreads
+    w32threads
+
+    debug
+    extra_warnings
+    shared
+    static
+'
+CODEX_CI='1'
+CODEX_MANAGED_BY_NPM='1'
+CODEX_MANAGED_PACKAGE_ROOT='/home/gianni/.nvm/versions/node/v20.20.1/lib/node_modules/@openai/codex'
+CODEX_THREAD_ID='019f7b1f-ca28-74c3-8cb0-a0f3896c9839'
+COLORTERM='truecolor'
+CONFIG_LIST='
+    audio_beos
+    audio_oss
+    avisynth
+    beos_netserver
+    bktr
+    bsfs
+    dc1394
+    decoders
+    demuxers
+    dv1394
+    encoders
+    ffmpeg
+    ffplay
+    ffserver
+    gpl
+    gprof
+    gray
+    ipv6
+    liba52
+    liba52bin
+    libamr
+    libamr_nb
+    libamr_wb
+    libfaac
+    libfaad
+    libfaadbin
+    libgsm
+    libmp3lame
+    libnut
+    libogg
+    libtheora
+    libvorbis
+    libx264
+    libxvid
+    memalign_hack
+    mpegaudio_hp
+    muxers
+    network
+    parsers
+    powerpc_perf
+    pp
+    protocols
+    small
+    swscaler
+    vhook
+    v4l
+    v4l2
+    x11grab
+    zlib
+'
+DBUS_SESSION_BUS_ADDRESS='unix:path=/run/user/1000/bus'
+DECODER_LIST='aasc_decoder
+asv1_decoder
+asv2_decoder
+avs_decoder
+bethsoftvid_decoder
+bmp_decoder
+c93_decoder
+cavs_decoder
+cinepak_decoder
+cljr_decoder
+cscd_decoder
+cyuv_decoder
+dnxhd_decoder
+dsicinvideo_decoder
+dvvideo_decoder
+dxa_decoder
+eightbps_decoder
+ffv1_decoder
+ffvhuff_decoder
+flashsv_decoder
+flic_decoder
+flv_decoder
+fourxm_decoder
+fraps_decoder
+gif_decoder
+h261_decoder
+h263_decoder
+h263i_decoder
+h264_decoder
+huffyuv_decoder
+idcin_decoder
+indeo2_decoder
+indeo3_decoder
+interplay_video_decoder
+jpegls_decoder
+kmvc_decoder
+loco_decoder
+mdec_decoder
+mjpeg_decoder
+mjpegb_decoder
+mmvideo_decoder
+mpeg_xvmc_decoder
+mpeg1video_decoder
+mpeg2video_decoder
+mpeg4_decoder
+mpegvideo_decoder
+msmpeg4v1_decoder
+msmpeg4v2_decoder
+msmpeg4v3_decoder
+msrle_decoder
+msvideo1_decoder
+mszh_decoder
+nuv_decoder
+png_decoder
+ptx_decoder
+qdraw_decoder
+qpeg_decoder
+qtrle_decoder
+rawvideo_decoder
+roq_decoder
+rpza_decoder
+rv10_decoder
+rv20_decoder
+sgi_decoder
+smacker_decoder
+smc_decoder
+snow_decoder
+sp5x_decoder
+svq1_decoder
+svq3_decoder
+targa_decoder
+theora_decoder
+thp_decoder
+tiertexseqvideo_decoder
+tiff_decoder
+truemotion1_decoder
+truemotion2_decoder
+tscc_decoder
+txd_decoder
+ulti_decoder
+vc1_decoder
+vcr1_decoder
+vmdvideo_decoder
+vmnc_decoder
+vp3_decoder
+vp5_decoder
+vp6_decoder
+vp6f_decoder
+vqa_decoder
+wmv1_decoder
+wmv2_decoder
+wmv3_decoder
+wnv1_decoder
+xan_wc3_decoder
+xl_decoder
+xsub_decoder
+zlib_decoder
+zmbv_decoder
+mpeg4aac_decoder
+ac3_decoder
+alac_decoder
+atrac3_decoder
+cook_decoder
+dca_decoder
+dsicinaudio_decoder
+flac_decoder
+imc_decoder
+libamr_nb_decoder
+libamr_wb_decoder
+liba52_decoder
+libfaad_decoder
+libgsm_decoder
+libgsm_ms_decoder
+libvorbis_decoder
+mace3_decoder
+mace6_decoder
+mp2_decoder
+mp3_decoder
+mp3adu_decoder
+mp3on4_decoder
+mpc7_decoder
+qdm2_decoder
+ra_144_decoder
+ra_288_decoder
+shorten_decoder
+smackaud_decoder
+sonic_decoder
+truespeech_decoder
+tta_decoder
+vmdaudio_decoder
+vorbis_decoder
+wavpack_decoder
+wmav1_decoder
+wmav2_decoder
+ws_snd1_decoder
+pcm_alaw_decoder
+pcm_mulaw_decoder
+pcm_s8_decoder
+pcm_s16be_decoder
+pcm_s16le_decoder
+pcm_s24be_decoder
+pcm_s24daud_decoder
+pcm_s24le_decoder
+pcm_s32be_decoder
+pcm_s32le_decoder
+pcm_u8_decoder
+pcm_u16be_decoder
+pcm_u16le_decoder
+pcm_u24be_decoder
+pcm_u24le_decoder
+pcm_u32be_decoder
+pcm_u32le_decoder
+pcm_zork_decoder
+interplay_dpcm_decoder
+roq_dpcm_decoder
+sol_dpcm_decoder
+xan_dpcm_decoder
+adpcm_4xm_decoder
+adpcm_adx_decoder
+adpcm_ct_decoder
+adpcm_ea_decoder
+adpcm_g726_decoder
+adpcm_ima_dk3_decoder
+adpcm_ima_dk4_decoder
+adpcm_ima_qt_decoder
+adpcm_ima_smjpeg_decoder
+adpcm_ima_wav_decoder
+adpcm_ima_ws_decoder
+adpcm_ms_decoder
+adpcm_sbpro_2_decoder
+adpcm_sbpro_3_decoder
+adpcm_sbpro_4_decoder
+adpcm_swf_decoder
+adpcm_thp_decoder
+adpcm_xa_decoder
+adpcm_yamaha_decoder
+dvbsub_decoder
+dvdsub_decoder'
+DEMUXER_LIST='aac_demuxer
+ac3_demuxer
+aiff_demuxer
+amr_demuxer
+apc_demuxer
+asf_demuxer
+au_demuxer
+audio_demuxer
+avi_demuxer
+avs_demuxer
+bethsoftvid_demuxer
+c93_demuxer
+daud_demuxer
+dc1394_demuxer
+dsicin_demuxer
+dts_demuxer
+dv_demuxer
+dv1394_demuxer
+dxa_demuxer
+ea_demuxer
+ffm_demuxer
+flac_demuxer
+flic_demuxer
+flv_demuxer
+fourxm_demuxer
+gif_demuxer
+gxf_demuxer
+h261_demuxer
+h263_demuxer
+h264_demuxer
+idcin_demuxer
+image2_demuxer
+image2pipe_demuxer
+ingenient_demuxer
+ipmovie_demuxer
+libnut_demuxer
+m4v_demuxer
+matroska_demuxer
+mjpeg_demuxer
+mm_demuxer
+mmf_demuxer
+mov_demuxer
+mp3_demuxer
+mpc_demuxer
+mpegps_demuxer
+mpegts_demuxer
+mpegtsraw_demuxer
+mpegvideo_demuxer
+mtv_demuxer
+mxf_demuxer
+nsv_demuxer
+nut_demuxer
+nuv_demuxer
+ogg_demuxer
+pcm_alaw_demuxer
+pcm_mulaw_demuxer
+pcm_s16be_demuxer
+pcm_s16le_demuxer
+pcm_s8_demuxer
+pcm_u16be_demuxer
+pcm_u16le_demuxer
+pcm_u8_demuxer
+rawvideo_demuxer
+rm_demuxer
+roq_demuxer
+redir_demuxer
+rtsp_demuxer
+sdp_demuxer
+segafilm_demuxer
+shorten_demuxer
+smacker_demuxer
+sol_demuxer
+str_demuxer
+swf_demuxer
+thp_demuxer
+tiertexseq_demuxer
+tta_demuxer
+txd_demuxer
+v4l2_demuxer
+vc1_demuxer
+video_grab_bktr_demuxer
+video_grab_v4l_demuxer
+vmd_demuxer
+voc_demuxer
+wav_demuxer
+wc3_demuxer
+wsaud_demuxer
+wsvqa_demuxer
+wv_demuxer
+x11_grab_device_demuxer
+yuv4mpegpipe_demuxer'
+DESKTOP_SESSION='cinnamon'
+DISPLAY=':0'
+DOTNET_BUNDLE_EXTRACT_BASE_DIR='/home/gianni/.cache/dotnet_bundle_extract'
+E1='0'
+E2='2'
+ENCODER_LIST='asv1_encoder
+asv2_encoder
+bmp_encoder
+dvvideo_encoder
+ffv1_encoder
+ffvhuff_encoder
+flashsv_encoder
+flv_encoder
+gif_encoder
+h261_encoder
+h263_encoder
+h263p_encoder
+huffyuv_encoder
+jpegls_encoder
+libx264_encoder
+libxvid_encoder
+ljpeg_encoder
+mjpeg_encoder
+mpeg1video_encoder
+mpeg2video_encoder
+mpeg4_encoder
+msmpeg4v1_encoder
+msmpeg4v2_encoder
+msmpeg4v3_encoder
+pam_encoder
+pbm_encoder
+pgm_encoder
+pgmyuv_encoder
+png_encoder
+ppm_encoder
+qtrle_encoder
+rawvideo_encoder
+roq_encoder
+rv10_encoder
+rv20_encoder
+sgi_encoder
+snow_encoder
+svq1_encoder
+targa_encoder
+tiff_encoder
+wmv1_encoder
+wmv2_encoder
+zlib_encoder
+zmbv_encoder
+ac3_encoder
+flac_encoder
+libamr_nb_encoder
+libamr_wb_encoder
+libfaac_encoder
+libgsm_encoder
+libgsm_ms_encoder
+libmp3lame_encoder
+libtheora_encoder
+libvorbis_encoder
+mp2_encoder
+sonic_encoder
+sonic_ls_encoder
+vorbis_encoder
+wmav1_encoder
+wmav2_encoder
+pcm_alaw_encoder
+pcm_mulaw_encoder
+pcm_s8_encoder
+pcm_s16be_encoder
+pcm_s16le_encoder
+pcm_s24be_encoder
+pcm_s24daud_encoder
+pcm_s24le_encoder
+pcm_s32be_encoder
+pcm_s32le_encoder
+pcm_u8_encoder
+pcm_u16be_encoder
+pcm_u16le_encoder
+pcm_u24be_encoder
+pcm_u24le_encoder
+pcm_u32be_encoder
+pcm_u32le_encoder
+pcm_zork_encoder
+roq_dpcm_encoder
+adpcm_4xm_encoder
+adpcm_adx_encoder
+adpcm_ct_encoder
+adpcm_ea_encoder
+adpcm_g726_encoder
+adpcm_ima_dk3_encoder
+adpcm_ima_dk4_encoder
+adpcm_ima_qt_encoder
+adpcm_ima_smjpeg_encoder
+adpcm_ima_wav_encoder
+adpcm_ima_ws_encoder
+adpcm_ms_encoder
+adpcm_sbpro_2_encoder
+adpcm_sbpro_3_encoder
+adpcm_sbpro_4_encoder
+adpcm_swf_encoder
+adpcm_xa_encoder
+adpcm_yamaha_encoder
+dvbsub_encoder
+dvdsub_encoder'
+FFMPEG_CONFIGURATION='--cross-compile --cross-prefix=psp- --arch=mips --target-os=linux --extra-cflags=-Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include --extra-ldflags=-L/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/libfaad/.libs --enable-gpl --enable-libfaad --disable-encoders --disable-muxers --disable-decoders --enable-decoder=h263 --enable-decoder=flv --enable-decoder=mp3 --enable-decoder=h264 --enable-decoder=mpeg4aac --disable-demuxers --enable-demuxer=flv --enable-demuxer=mov --disable-protocols --enable-protocol=file --disable-network --disable-debug --disable-ffserver --disable-ffplay --disable-ffmpeg'
+FFSERVERLDFLAGS='-Wl,-E'
+GDMSESSION='cinnamon'
+GDM_LANG='en_US'
+GH_PAGER='cat'
+GIT_PAGER='cat'
+GNOME_DESKTOP_SESSION_ID='this-is-deprecated'
+GNOME_KEYRING_CONTROL='/run/user/1000/keyring'
+GNOME_TERMINAL_SCREEN='/org/gnome/Terminal/screen/9e2b82f1_8f7b_49ff_b02e_11ffb6501b68'
+GNOME_TERMINAL_SERVICE=':1.365'
+GPG_AGENT_INFO='/run/user/1000/gnupg/S.gpg-agent:0:1'
+GTK3_MODULES='xapp-gtk3-module'
+GTK_IM_MODULE='ibus'
+GTK_MODULES='gail:atk-bridge'
+HAVE_LIST='
+    
+    altivec
+    armv5te
+    armv6
+    iwmmxt
+    mmi
+    mmx
+    ssse3
+
+    
+    beosthreads
+    pthreads
+    w32threads
+
+    altivec_h
+    arpa_inet_h
+    byteswap_h
+    closesocket
+    cmov
+    conio_h
+    dcbzl
+    dev_bktr_ioctl_bt848_h
+    dev_bktr_ioctl_meteor_h
+    dev_ic_bt8xx_h
+    dev_video_meteor_ioctl_meteor_h
+    dev_video_bktr_ioctl_bt848_h
+    dlfcn_h
+    dlopen
+    ebp_available
+    ebx_available
+    fast_64bit
+    fast_cmov
+    fast_unaligned
+    fork
+    freetype2
+    GetProcessTimes
+    gethrtime
+    getrusage
+    imlib2
+    inet_aton
+    lrintf
+    machine_ioctl_bt848_h
+    machine_ioctl_meteor_h
+    malloc_h
+    memalign
+    mkstemp
+    mlib
+    ppc64
+    sdl
+    sdl_video_size
+    soundcard_h
+    sys_poll_h
+    sys_soundcard_h
+    termios_h
+    threads
+    winsock2_h
+'
+HIP_VISIBLE_DEVICES='0'
+HOME='/home/gianni'
+HSA_OVERRIDE_GFX_VERSION='11.0.0'
+IFS=' 	
+'
+INSIDE_NEMO_PYTHON=''
+LANG='en_US.UTF-8'
+LANGUAGE='en_US'
+LC_ADDRESS='nl_BE.UTF-8'
+LC_ALL='C.UTF-8'
+LC_CTYPE='C.UTF-8'
+LC_IDENTIFICATION='nl_BE.UTF-8'
+LC_MEASUREMENT='nl_BE.UTF-8'
+LC_MONETARY='nl_BE.UTF-8'
+LC_NAME='nl_BE.UTF-8'
+LC_NUMERIC='nl_BE.UTF-8'
+LC_PAPER='nl_BE.UTF-8'
+LC_TELEPHONE='nl_BE.UTF-8'
+LC_TIME='nl_BE.UTF-8'
+LDCONFIG='ldconfig'
+LDFLAGS=' -L/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/libfaad/.libs'
+LDLATEFLAGS='-Wl,--as-needed -Wl,-rpath-link,\$(BUILD_ROOT)/libavcodec -Wl,-rpath-link,\$(BUILD_ROOT)/libavformat -Wl,-rpath-link,\$(BUILD_ROOT)/libavutil'
+LESSCLOSE='/usr/bin/lesspipe %s %s'
+LESSOPEN='| /usr/bin/lesspipe %s'
+LIB='$(LIBPREF)$(NAME)$(LIBSUF)'
+LIBPREF='lib'
+LIBSUF='.a'
+LIB_INSTALL_EXTRA_CMD='$(RANLIB) "$(LIBDIR)/$(LIB)"'
+LOGNAME='gianni'
+LS_COLORS='rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=00:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.avif=01;35:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:*~=00;90:*#=00;90:*.bak=00;90:*.crdownload=00;90:*.dpkg-dist=00;90:*.dpkg-new=00;90:*.dpkg-old=00;90:*.dpkg-tmp=00;90:*.old=00;90:*.orig=00;90:*.part=00;90:*.rej=00;90:*.rpmnew=00;90:*.rpmorig=00;90:*.rpmsave=00;90:*.swp=00;90:*.tmp=00;90:*.ucf-dist=00;90:*.ucf-new=00;90:*.ucf-old=00;90:'
+MUXER_LIST='ac3_muxer
+adts_muxer
+aiff_muxer
+amr_muxer
+asf_muxer
+asf_stream_muxer
+au_muxer
+audio_muxer
+avi_muxer
+crc_muxer
+dv_muxer
+ffm_muxer
+flac_muxer
+flv_muxer
+framecrc_muxer
+gif_muxer
+gxf_muxer
+h261_muxer
+h263_muxer
+h264_muxer
+image2_muxer
+image2pipe_muxer
+libnut_muxer
+m4v_muxer
+mjpeg_muxer
+mmf_muxer
+mov_muxer
+mp2_muxer
+mp3_muxer
+mp4_muxer
+mpeg1system_muxer
+mpeg1vcd_muxer
+mpeg1video_muxer
+mpeg2dvd_muxer
+mpeg2svcd_muxer
+mpeg2video_muxer
+mpeg2vob_muxer
+mpegts_muxer
+mpjpeg_muxer
+null_muxer
+nut_muxer
+ogg_muxer
+pcm_alaw_muxer
+pcm_mulaw_muxer
+pcm_s16be_muxer
+pcm_s16le_muxer
+pcm_s8_muxer
+pcm_u16be_muxer
+pcm_u16le_muxer
+pcm_u8_muxer
+psp_muxer
+rawvideo_muxer
+rm_muxer
+roq_muxer
+rtp_muxer
+swf_muxer
+tg2_muxer
+tgp_muxer
+voc_muxer
+wav_muxer
+yuv4mpegpipe_muxer'
+NO_COLOR='1'
+NVM_BIN='/home/gianni/.nvm/versions/node/v20.20.1/bin'
+NVM_CD_FLAGS=''
+NVM_DIR='/home/gianni/.nvm'
+NVM_INC='/home/gianni/.nvm/versions/node/v20.20.1/include/node'
+OLDPWD='/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7'
+OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS='true'
+OPTIND='1'
+PAGER='cat'
+PAPERSIZE='a4'
+PARSER_LIST='aac_parser
+ac3_parser
+cavsvideo_parser
+dca_parser
+dvbsub_parser
+dvdsub_parser
+h261_parser
+h263_parser
+h264_parser
+mjpeg_parser
+mpeg4video_parser
+mpegaudio_parser
+mpegvideo_parser
+pnm_parser
+vc1_parser'
+PATH='/usr/local/pspdev/bin:/home/gianni/.nvm/versions/node/v20.20.1/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/gianni/.local/bin:/home/gianni/.codex/tmp/arg0/codex-arg0CNmPVf:/home/gianni/.nvm/versions/node/v20.20.1/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/gianni/.bun/bin:/home/gianni/.nvm/versions/node/v20.20.1/bin:/home/gianni/.opencode/bin:/home/gianni/.cargo/bin:/home/gianni/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/rocm/bin:/home/gianni/.dotnet/tools:/home/gianni/.lmstudio/bin:/home/gianni/.lmstudio/bin:/home/gianni/.spicetify:/home/gianni/.dotnet/tools:/home/gianni/.lmstudio/bin'
+PPID='86327'
+PREFIX='/usr/local'
+PROTOCOL_LIST='file_protocol
+http_protocol
+pipe_protocol
+rtp_protocol
+tcp_protocol
+udp_protocol'
+PS1='$ '
+PS2='> '
+PS4='+ '
+PWD='/home/gianni/Desktop/PSP/workplace/third_party/ffmpeg'
+QT_ACCESSIBILITY='1'
+QT_IM_MODULE='ibus'
+QT_IM_MODULES='wayland;ibus'
+SESSION_MANAGER='local/gianni-B650M-Pro-RS:@/tmp/.ICE-unix/1392,unix/gianni-B650M-Pro-RS:/tmp/.ICE-unix/1392'
+SHELL='/bin/bash'
+SHFLAGS='-shared -Wl,-soname,$@'
+SHLVL='3'
+SLIBNAME='$(SLIBPREF)$(NAME)$(SLIBSUF)'
+SLIBNAME_WITH_MAJOR='$(SLIBNAME).$(LIBMAJOR)'
+SLIBNAME_WITH_VERSION='$(SLIBNAME).$(LIBVERSION)'
+SLIBPREF='lib'
+SLIBSUF='.so'
+SSH_AUTH_SOCK='/run/user/1000/keyring/ssh'
+TERM='xterm-256color'
+THREADS_LIST='
+    beosthreads
+    pthreads
+    w32threads
+'
+TMPC='/tmp/ffmpeg-conf--90795-.c'
+TMPDIR1='/tmp'
+TMPE='/tmp/ffmpeg-conf--90795-'
+TMPH='/tmp/ffmpeg-conf--90795-.h'
+TMPO='/tmp/ffmpeg-conf--90795-.o'
+TMPS='/tmp/ffmpeg-conf--90795-.S'
+USER='gianni'
+VHOOKSHFLAGS='$(SHFLAGS)'
+VTE_VERSION='7600'
+XAUTHORITY='/home/gianni/.Xauthority'
+XDG_CONFIG_DIRS='/etc/xdg/xdg-cinnamon:/etc/xdg'
+XDG_CURRENT_DESKTOP='X-Cinnamon'
+XDG_DATA_DIRS='/usr/share/cinnamon:/home/gianni/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share:/usr/local/share:/usr/share'
+XDG_GREETER_DATA_DIR='/var/lib/lightdm-data/gianni'
+XDG_RUNTIME_DIR='/run/user/1000'
+XDG_SEAT='seat0'
+XDG_SEAT_PATH='/org/freedesktop/DisplayManager/Seat0'
+XDG_SESSION_CLASS='user'
+XDG_SESSION_DESKTOP='cinnamon'
+XDG_SESSION_ID='c1'
+XDG_SESSION_PATH='/org/freedesktop/DisplayManager/Session0'
+XDG_SESSION_TYPE='x11'
+XDG_VTNR='7'
+XMODIFIERS='@im=ibus'
+_='./configure'
+aac_demuxer='no'
+aac_parser='yes'
+aasc_decoder='no'
+ac3_decoder='no'
+ac3_decoder_deps='gpl'
+ac3_demuxer='no'
+ac3_demuxer_deps='ac3_parser'
+ac3_encoder='no'
+ac3_muxer='no'
+ac3_parser='yes'
+action='disable'
+adpcm_4xm_decoder='no'
+adpcm_4xm_encoder='no'
+adpcm_adx_decoder='no'
+adpcm_adx_encoder='no'
+adpcm_ct_decoder='no'
+adpcm_ct_encoder='no'
+adpcm_ea_decoder='no'
+adpcm_ea_encoder='no'
+adpcm_g726_decoder='no'
+adpcm_g726_encoder='no'
+adpcm_ima_dk3_decoder='no'
+adpcm_ima_dk3_encoder='no'
+adpcm_ima_dk4_decoder='no'
+adpcm_ima_dk4_encoder='no'
+adpcm_ima_qt_decoder='no'
+adpcm_ima_qt_encoder='no'
+adpcm_ima_smjpeg_decoder='no'
+adpcm_ima_smjpeg_encoder='no'
+adpcm_ima_wav_decoder='no'
+adpcm_ima_wav_encoder='no'
+adpcm_ima_ws_decoder='no'
+adpcm_ima_ws_encoder='no'
+adpcm_ms_decoder='no'
+adpcm_ms_encoder='no'
+adpcm_sbpro_2_decoder='no'
+adpcm_sbpro_2_encoder='no'
+adpcm_sbpro_3_decoder='no'
+adpcm_sbpro_3_encoder='no'
+adpcm_sbpro_4_decoder='no'
+adpcm_sbpro_4_encoder='no'
+adpcm_swf_decoder='no'
+adpcm_swf_encoder='no'
+adpcm_thp_decoder='no'
+adpcm_xa_decoder='no'
+adpcm_xa_encoder='no'
+adpcm_yamaha_decoder='no'
+adpcm_yamaha_encoder='no'
+adts_muxer='no'
+aiff_demuxer='no'
+aiff_muxer='no'
+alac_decoder='no'
+altivec='yes'
+altivec_deps='powerpc'
+amr_demuxer='no'
+amr_muxer='no'
+apc_demuxer='no'
+ar='ar'
+arch='mips'
+armv5te='yes'
+armv5te_deps='armv4l'
+armv6='yes'
+armv6_deps='armv4l'
+asf_demuxer='no'
+asf_muxer='no'
+asf_stream_muxer='no'
+asmalign_pot='unknown'
+asv1_decoder='no'
+asv1_encoder='no'
+asv2_decoder='no'
+asv2_encoder='no'
+atrac3_decoder='no'
+au_demuxer='no'
+au_muxer='no'
+audio_demuxer='no'
+audio_demuxer_deps_any='audio_oss audio_beos'
+audio_muxer='no'
+audio_muxer_deps_any='audio_oss audio_beos'
+audio_oss='yes'
+avi_demuxer='no'
+avi_muxer='no'
+avs_decoder='no'
+avs_demuxer='no'
+bethsoftvid_decoder='no'
+bethsoftvid_demuxer='no'
+bindir='$(PREFIX)/bin'
+bktr='yes'
+bmp_decoder='no'
+bmp_encoder='no'
+c93_decoder='no'
+c93_demuxer='no'
+cavs_decoder='no'
+cavsvideo_parser='yes'
+cc='gcc'
+cinepak_decoder='no'
+cljr_decoder='no'
+cook_decoder='no'
+cpu='generic'
+crc_muxer='no'
+cross_compile='yes'
+cross_prefix='psp-'
+cscd_decoder='no'
+cyuv_decoder='no'
+daud_demuxer='no'
+dc1394_demuxer='no'
+dc1394_demuxer_deps='dc1394'
+dca_decoder='no'
+dca_parser='yes'
+debug='no'
+dnxhd_decoder='no'
+dostrip='yes'
+dsicin_demuxer='no'
+dsicinaudio_decoder='no'
+dsicinvideo_decoder='no'
+dts_demuxer='no'
+dump_extradata_bsf='yes'
+dv1394='yes'
+dv1394_demuxer='no'
+dv1394_demuxer_deps='dv1394'
+dv_demuxer='no'
+dv_muxer='no'
+dvbsub_decoder='no'
+dvbsub_encoder='no'
+dvbsub_parser='yes'
+dvdsub_decoder='no'
+dvdsub_encoder='no'
+dvdsub_parser='yes'
+dvvideo_decoder='no'
+dvvideo_encoder='no'
+dxa_decoder='no'
+dxa_decoder_deps='zlib'
+dxa_demuxer='no'
+ea_demuxer='no'
+eightbps_decoder='no'
+extralibs=' -lm'
+ffm_demuxer='no'
+ffm_muxer='no'
+ffmpeg='no'
+ffplay='no'
+ffplay_deps='sdl'
+ffserver='no'
+ffserver_deps='muxers rtp_protocol'
+ffv1_decoder='no'
+ffv1_encoder='no'
+ffvhuff_decoder='no'
+ffvhuff_encoder='no'
+file_protocol='yes'
+flac_decoder='no'
+flac_demuxer='no'
+flac_encoder='no'
+flac_muxer='no'
+flashsv_decoder='no'
+flashsv_decoder_deps='zlib'
+flashsv_encoder='no'
+flashsv_encoder_deps='zlib'
+flic_decoder='no'
+flic_demuxer='no'
+flv_decoder='yes'
+flv_decoder_deps='h263_decoder'
+flv_demuxer='yes'
+flv_encoder='no'
+flv_muxer='no'
+fourxm_decoder='no'
+fourxm_demuxer='no'
+framecrc_muxer='no'
+fraps_decoder='no'
+gif_decoder='no'
+gif_demuxer='no'
+gif_encoder='no'
+gif_muxer='no'
+gpl='yes'
+gxf_demuxer='no'
+gxf_muxer='no'
+h261_decoder='no'
+h261_demuxer='no'
+h261_encoder='no'
+h261_muxer='no'
+h261_parser='yes'
+h263_decoder='yes'
+h263_decoder_deps='h263_parser mpeg4video_parser'
+h263_demuxer='no'
+h263_encoder='no'
+h263_muxer='no'
+h263_parser='yes'
+h263i_decoder='no'
+h263i_decoder_deps='h263_decoder'
+h263p_encoder='no'
+h264_decoder='yes'
+h264_decoder_deps='h264_parser'
+h264_demuxer='no'
+h264_muxer='no'
+h264_parser='yes'
+http_protocol='no'
+http_protocol_deps='network'
+huffyuv_decoder='no'
+huffyuv_encoder='no'
+idcin_decoder='no'
+idcin_demuxer='no'
+image2_demuxer='no'
+image2_muxer='no'
+image2pipe_demuxer='no'
+image2pipe_muxer='no'
+imc_decoder='no'
+imx_dump_header_bsf='yes'
+incdir='$(PREFIX)/include/ffmpeg'
+indeo2_decoder='no'
+indeo3_decoder='no'
+ingenient_demuxer='no'
+interplay_dpcm_decoder='no'
+interplay_video_decoder='no'
+ipmovie_demuxer='no'
+ipv6='yes'
+iwmmxt='yes'
+iwmmxt_deps='armv4l'
+jpegls_decoder='no'
+jpegls_encoder='no'
+kmvc_decoder='no'
+liba52_decoder='no'
+liba52_decoder_deps='liba52'
+libamr_nb_decoder='no'
+libamr_nb_decoder_deps='libamr_nb'
+libamr_nb_encoder='no'
+libamr_nb_encoder_deps='libamr_nb'
+libamr_wb_decoder='no'
+libamr_wb_decoder_deps='libamr_wb'
+libamr_wb_encoder='no'
+libamr_wb_encoder_deps='libamr_wb'
+libdir='$(PREFIX)/lib'
+libfaac_encoder='no'
+libfaac_encoder_deps='libfaac'
+libfaad='yes'
+libfaad_decoder='no'
+libfaad_decoder_deps='libfaad'
+libgsm_decoder='no'
+libgsm_decoder_deps='libgsm'
+libgsm_encoder='no'
+libgsm_encoder_deps='libgsm'
+libgsm_ms_decoder='no'
+libgsm_ms_decoder_deps='libgsm'
+libgsm_ms_encoder='no'
+libgsm_ms_encoder_deps='libgsm'
+libmp3lame_encoder='no'
+libmp3lame_encoder_deps='libmp3lame'
+libnut_demuxer='no'
+libnut_demuxer_deps='libnut'
+libnut_muxer='no'
+libnut_muxer_deps='libnut'
+libtheora_encoder='no'
+libtheora_encoder_deps='libtheora'
+libvorbis_decoder='no'
+libvorbis_decoder_deps='libvorbis'
+libvorbis_encoder='no'
+libvorbis_encoder_deps='libvorbis'
+libx264_encoder='no'
+libx264_encoder_deps='libx264'
+libxvid_encoder='no'
+libxvid_encoder_deps='libxvid'
+ljpeg_encoder='no'
+loco_decoder='no'
+logfile='config.err'
+logging='yes'
+m4v_demuxer='no'
+m4v_muxer='no'
+mace3_decoder='no'
+mace6_decoder='no'
+make='make'
+mandir='$(PREFIX)/man'
+matroska_demuxer='no'
+mdec_decoder='no'
+mips='yes'
+mjpeg_decoder='no'
+mjpeg_demuxer='no'
+mjpeg_encoder='no'
+mjpeg_muxer='no'
+mjpeg_parser='yes'
+mjpega_dump_header_bsf='yes'
+mjpegb_decoder='no'
+mm_demuxer='no'
+mmf_demuxer='no'
+mmf_muxer='no'
+mmi='yes'
+mmi_deps='mips'
+mmvideo_decoder='no'
+mmx='yes'
+mmx_deps='x86'
+mov_demuxer='yes'
+mov_muxer='no'
+mp2_decoder='no'
+mp2_encoder='no'
+mp2_muxer='no'
+mp3_decoder='yes'
+mp3_demuxer='no'
+mp3_demuxer_deps='mpegaudio_parser'
+mp3_header_compress_bsf='yes'
+mp3_header_decompress_bsf='yes'
+mp3_muxer='no'
+mp3adu_decoder='no'
+mp3on4_decoder='no'
+mp4_muxer='no'
+mpc7_decoder='no'
+mpc_demuxer='no'
+mpeg1system_muxer='no'
+mpeg1vcd_muxer='no'
+mpeg1video_decoder='no'
+mpeg1video_encoder='no'
+mpeg1video_muxer='no'
+mpeg2dvd_muxer='no'
+mpeg2svcd_muxer='no'
+mpeg2video_decoder='no'
+mpeg2video_encoder='no'
+mpeg2video_muxer='no'
+mpeg2vob_muxer='no'
+mpeg4_decoder='no'
+mpeg4_decoder_deps='h263_decoder'
+mpeg4_encoder='no'
+mpeg4aac_decoder='yes'
+mpeg4aac_decoder_deps='libfaad'
+mpeg4video_parser='yes'
+mpeg_xvmc_decoder='no'
+mpeg_xvmc_decoder_deps='xvmc'
+mpegaudio_hp='yes'
+mpegaudio_parser='yes'
+mpegps_demuxer='no'
+mpegts_demuxer='no'
+mpegts_muxer='no'
+mpegtsraw_demuxer='no'
+mpegvideo_decoder='no'
+mpegvideo_demuxer='no'
+mpegvideo_parser='yes'
+mpjpeg_muxer='no'
+msmpeg4v1_decoder='no'
+msmpeg4v1_decoder_deps='h263_decoder'
+msmpeg4v1_encoder='no'
+msmpeg4v2_decoder='no'
+msmpeg4v2_decoder_deps='h263_decoder'
+msmpeg4v2_encoder='no'
+msmpeg4v3_decoder='no'
+msmpeg4v3_decoder_deps='h263_decoder'
+msmpeg4v3_encoder='no'
+msrle_decoder='no'
+msvideo1_decoder='no'
+mszh_decoder='no'
+mtv_demuxer='no'
+mxf_demuxer='no'
+name='file'
+network='no'
+noise_bsf='yes'
+nsv_demuxer='no'
+null_muxer='no'
+nut_demuxer='no'
+nut_muxer='no'
+nuv_decoder='no'
+nuv_demuxer='no'
+ogg_demuxer='no'
+ogg_muxer='no'
+ogg_muxer_deps='libogg'
+opt='x86_64'
+optimize='yes'
+option='ffmpeg'
+optval='--disable-ffmpeg'
+osextralibs='-lm'
+pam_encoder='no'
+pbm_encoder='no'
+pcm_alaw_decoder='no'
+pcm_alaw_demuxer='no'
+pcm_alaw_encoder='no'
+pcm_alaw_muxer='no'
+pcm_mulaw_decoder='no'
+pcm_mulaw_demuxer='no'
+pcm_mulaw_encoder='no'
+pcm_mulaw_muxer='no'
+pcm_s16be_decoder='no'
+pcm_s16be_demuxer='no'
+pcm_s16be_encoder='no'
+pcm_s16be_muxer='no'
+pcm_s16le_decoder='no'
+pcm_s16le_demuxer='no'
+pcm_s16le_encoder='no'
+pcm_s16le_muxer='no'
+pcm_s24be_decoder='no'
+pcm_s24be_encoder='no'
+pcm_s24daud_decoder='no'
+pcm_s24daud_encoder='no'
+pcm_s24le_decoder='no'
+pcm_s24le_encoder='no'
+pcm_s32be_decoder='no'
+pcm_s32be_encoder='no'
+pcm_s32le_decoder='no'
+pcm_s32le_encoder='no'
+pcm_s8_decoder='no'
+pcm_s8_demuxer='no'
+pcm_s8_encoder='no'
+pcm_s8_muxer='no'
+pcm_u16be_decoder='no'
+pcm_u16be_demuxer='no'
+pcm_u16be_encoder='no'
+pcm_u16be_muxer='no'
+pcm_u16le_decoder='no'
+pcm_u16le_demuxer='no'
+pcm_u16le_encoder='no'
+pcm_u16le_muxer='no'
+pcm_u24be_decoder='no'
+pcm_u24be_encoder='no'
+pcm_u24le_decoder='no'
+pcm_u24le_encoder='no'
+pcm_u32be_decoder='no'
+pcm_u32be_encoder='no'
+pcm_u32le_decoder='no'
+pcm_u32le_encoder='no'
+pcm_u8_decoder='no'
+pcm_u8_demuxer='no'
+pcm_u8_encoder='no'
+pcm_u8_muxer='no'
+pcm_zork_decoder='no'
+pcm_zork_encoder='no'
+pgm_encoder='no'
+pgmyuv_encoder='no'
+pipe_protocol='no'
+png_decoder='no'
+png_decoder_deps='zlib'
+png_encoder='no'
+png_encoder_deps='zlib'
+pnm_parser='yes'
+ppm_encoder='no'
+protocols='yes'
+psp_muxer='no'
+ptx_decoder='no'
+qdm2_decoder='no'
+qdraw_decoder='no'
+qpeg_decoder='no'
+qtrle_decoder='no'
+qtrle_encoder='no'
+ra_144_decoder='no'
+ra_288_decoder='no'
+ranlib='ranlib'
+rawvideo_decoder='no'
+rawvideo_demuxer='no'
+rawvideo_encoder='no'
+rawvideo_muxer='no'
+redir_demuxer='no'
+redir_demuxer_deps='network'
+remove_extradata_bsf='yes'
+rm_demuxer='no'
+rm_muxer='no'
+roq_decoder='no'
+roq_demuxer='no'
+roq_dpcm_decoder='no'
+roq_dpcm_encoder='no'
+roq_encoder='no'
+roq_muxer='no'
+rpza_decoder='no'
+rtp_muxer='no'
+rtp_muxer_deps='network mpegts_demuxer'
+rtp_protocol='no'
+rtp_protocol_deps='udp_protocol'
+rtsp_demuxer='no'
+rtsp_demuxer_deps='rtp_protocol rtp_muxer'
+rv10_decoder='no'
+rv10_encoder='no'
+rv20_decoder='no'
+rv20_encoder='no'
+sdp_demuxer='no'
+sdp_demuxer_deps='rtsp_demuxer'
+segafilm_demuxer='no'
+sgi_decoder='no'
+sgi_encoder='no'
+shlibdir='$(PREFIX)/lib'
+shorten_decoder='no'
+shorten_demuxer='no'
+smackaud_decoder='no'
+smacker_decoder='no'
+smacker_demuxer='no'
+smc_decoder='no'
+snow_decoder='no'
+snow_encoder='no'
+sol_demuxer='no'
+sol_dpcm_decoder='no'
+sonic_decoder='no'
+sonic_encoder='no'
+sonic_ls_encoder='no'
+source_path='/home/gianni/Desktop/PSP/workplace/third_party/ffmpeg'
+source_path_used='no'
+sp5x_decoder='no'
+ssse3='yes'
+ssse3_deps='x86'
+static='yes'
+str_demuxer='no'
+strip='strip'
+svq1_decoder='no'
+svq1_encoder='no'
+svq3_decoder='no'
+svq3_decoder_deps='h264_parser'
+swf_demuxer='no'
+swf_muxer='no'
+targa_decoder='no'
+targa_encoder='no'
+targetos='linux'
+tcp_protocol='no'
+tcp_protocol_deps='network'
+tg2_muxer='no'
+tgp_muxer='no'
+theora_decoder='no'
+thing='protocol'
+thp_decoder='no'
+thp_demuxer='no'
+tiertexseq_demuxer='no'
+tiertexseqvideo_decoder='no'
+tiff_decoder='no'
+tiff_encoder='no'
+truemotion1_decoder='no'
+truemotion2_decoder='no'
+truespeech_decoder='no'
+tscc_decoder='no'
+tta_decoder='no'
+tta_demuxer='no'
+txd_decoder='no'
+txd_demuxer='no'
+udp_protocol='no'
+udp_protocol_deps='network'
+ulti_decoder='no'
+v4l='yes'
+v4l2='yes'
+v4l2_demuxer='no'
+v4l2_demuxer_deps='v4l2'
+value='yes'
+var='extralibs'
+vc1_decoder='no'
+vc1_decoder_deps='h263_decoder'
+vc1_demuxer='no'
+vc1_parser='yes'
+vcr1_decoder='no'
+vhook='default'
+video_grab_bktr_demuxer='no'
+video_grab_bktr_demuxer_deps='bktr'
+video_grab_v4l_demuxer='no'
+video_grab_v4l_demuxer_deps='v4l'
+vmd_demuxer='no'
+vmdaudio_decoder='no'
+vmdvideo_decoder='no'
+vmnc_decoder='no'
+voc_demuxer='no'
+voc_muxer='no'
+vorbis_decoder='no'
+vorbis_encoder='no'
+vp3_decoder='no'
+vp5_decoder='no'
+vp6_decoder='no'
+vp6f_decoder='no'
+vqa_decoder='no'
+wav_demuxer='no'
+wav_muxer='no'
+wavpack_decoder='no'
+wc3_demuxer='no'
+wmav1_decoder='no'
+wmav1_encoder='no'
+wmav2_decoder='no'
+wmav2_encoder='no'
+wmv1_decoder='no'
+wmv1_decoder_deps='h263_decoder'
+wmv1_encoder='no'
+wmv2_decoder='no'
+wmv2_decoder_deps='h263_decoder'
+wmv2_encoder='no'
+wmv3_decoder='no'
+wmv3_decoder_deps='h263_decoder'
+wnv1_decoder='no'
+ws_snd1_decoder='no'
+wsaud_demuxer='no'
+wsvqa_demuxer='no'
+wv_demuxer='no'
+x11_grab_device_demuxer='no'
+x11_grab_device_demuxer_deps='x11grab'
+xan_dpcm_decoder='no'
+xan_wc3_decoder='no'
+xl_decoder='no'
+xsub_decoder='no'
+yuv4mpegpipe_demuxer='no'
+yuv4mpegpipe_muxer='no'
+zlib='yes'
+zlib_decoder='no'
+zlib_encoder='no'
+zmbv_decoder='no'
+zmbv_decoder_deps='zlib'
+zmbv_encoder='no'
+zmbv_encoder_deps='zlib'
+check_header faad.h
+check_cpp
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	#include <faad.h>
+     2	int x;
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -E -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+check_cc
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	#include <faad.h>
+     2	#ifndef FAAD2_VERSION
+     3	ok faad1
+     4	#endif
+     5	int main( void ) { return 0; }
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -c -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+In file included from /tmp/ffmpeg-conf--90795-.c:1:
+/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include/faad.h:32:9: note: '#pragma message: please update faad2 include filename and function names!'
+   32 | #pragma message("please update faad2 include filename and function names!")
+      |         ^~~~~~~
+check_ld
+check_cc
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	int main(){
+     2	    return 0;
+     3	}
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -c -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+psp-gcc -L/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/libfaad/.libs -o /tmp/ffmpeg-conf--90795- /tmp/ffmpeg-conf--90795-.o -lm
+check_cc
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	int main(void) {
+     2	    __asm__ ("lq $2, 0($2)");
+     3	    return 0;
+     4	}
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -c -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+/tmp/ccggD0hX.s: Assembler messages:
+/tmp/ccggD0hX.s:23: Error: opcode not supported on this processor: allegrex (mips2) `lq $2,0($2)'
+check_header malloc.h
+check_cpp
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	#include <malloc.h>
+     2	int x;
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -E -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+check_func memalign
+check_ld
+check_cc
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	extern int memalign();
+     2	int main(){
+     3	    memalign();
+     4	}
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -c -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+psp-gcc -L/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/libfaad/.libs -o /tmp/ffmpeg-conf--90795- /tmp/ffmpeg-conf--90795-.o -lm
+check_header byteswap.h
+check_cpp
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	#include <byteswap.h>
+     2	int x;
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -E -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+/tmp/ffmpeg-conf--90795-.c:1:10: fatal error: byteswap.h: No such file or directory
+    1 | #include <byteswap.h>
+      |          ^~~~~~~~~~~~
+compilation terminated.
+check_func mkstemp
+check_ld
+check_cc
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	extern int mkstemp();
+     2	int main(){
+     3	    mkstemp();
+     4	}
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -c -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+psp-gcc -L/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/libfaad/.libs -o /tmp/ffmpeg-conf--90795- /tmp/ffmpeg-conf--90795-.o -lm
+check_func gethrtime
+check_ld
+check_cc
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	extern int gethrtime();
+     2	int main(){
+     3	    gethrtime();
+     4	}
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -c -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+psp-gcc -L/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/libfaad/.libs -o /tmp/ffmpeg-conf--90795- /tmp/ffmpeg-conf--90795-.o -lm
+/usr/local/pspdev/lib/gcc/psp/15.2.0/../../../../psp/bin/ld: /tmp/ffmpeg-conf--90795-.o: in function `main':
+(.text+0x8): undefined reference to `gethrtime'
+collect2: error: ld returned 1 exit status
+check_header termios.h
+check_cpp
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	#include <termios.h>
+     2	int x;
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -E -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+In file included from /tmp/ffmpeg-conf--90795-.c:1:
+/usr/local/pspdev/psp/include/termios.h:4:10: fatal error: sys/termios.h: No such file or directory
+    4 | #include <sys/termios.h>
+      |          ^~~~~~~~~~~~~~~
+compilation terminated.
+check_header conio.h
+check_cpp
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	#include <conio.h>
+     2	int x;
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -E -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+/tmp/ffmpeg-conf--90795-.c:1:10: fatal error: conio.h: No such file or directory
+    1 | #include <conio.h>
+      |          ^~~~~~~~~
+compilation terminated.
+check_header arpa/inet.h
+check_cpp
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	#include <arpa/inet.h>
+     2	int x;
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -E -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+/tmp/ffmpeg-conf--90795-.c:1:10: fatal error: arpa/inet.h: No such file or directory
+    1 | #include <arpa/inet.h>
+      |          ^~~~~~~~~~~~~
+compilation terminated.
+check_header winsock2.h
+check_cpp
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	#include <winsock2.h>
+     2	int x;
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -E -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+/tmp/ffmpeg-conf--90795-.c:1:10: fatal error: winsock2.h: No such file or directory
+    1 | #include <winsock2.h>
+      |          ^~~~~~~~~~~~
+compilation terminated.
+check_func inet_aton
+check_ld
+check_cc
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	extern int inet_aton();
+     2	int main(){
+     3	    inet_aton();
+     4	}
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -c -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+psp-gcc -L/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/libfaad/.libs -o /tmp/ffmpeg-conf--90795- /tmp/ffmpeg-conf--90795-.o -lm
+/usr/local/pspdev/lib/gcc/psp/15.2.0/../../../../psp/bin/ld: /tmp/ffmpeg-conf--90795-.o: in function `main':
+(.text+0x8): undefined reference to `inet_aton'
+collect2: error: ld returned 1 exit status
+check_lib zlib.h zlibVersion -lz
+check_header zlib.h
+check_cpp
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	#include <zlib.h>
+     2	int x;
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -E -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+check_func zlibVersion
+check_ld
+check_cc
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	extern int zlibVersion();
+     2	int main(){
+     3	    zlibVersion();
+     4	}
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -c -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+psp-gcc -L/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/libfaad/.libs -o /tmp/ffmpeg-conf--90795- /tmp/ffmpeg-conf--90795-.o -lm -lz
+check_ld
+check_cc
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	#define _ISOC9X_SOURCE  1
+     2	#include <math.h>
+     3	int main( void ) { return (lrintf(3.999f) > 0)?0:1; }
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -c -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+psp-gcc -L/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/libfaad/.libs -o /tmp/ffmpeg-conf--90795- /tmp/ffmpeg-conf--90795-.o -lm -lz
+check_lib2 faad.h faacDecOpen -lfaad
+check_func2 faad.h faacDecOpen
+check_ld
+check_cc
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	
+     2	#include <faad.h>
+     3	int main(){
+     4	    (void) faacDecOpen;
+     5	    return 0;
+     6	}
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -c -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+In file included from /tmp/ffmpeg-conf--90795-.c:2:
+/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include/faad.h:32:9: note: '#pragma message: please update faad2 include filename and function names!'
+   32 | #pragma message("please update faad2 include filename and function names!")
+      |         ^~~~~~~
+psp-gcc -L/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/libfaad/.libs -o /tmp/ffmpeg-conf--90795- /tmp/ffmpeg-conf--90795-.o -lm -lz -lfaad
+check_cc
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	void foo(char * restrict p);
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -c -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+check_header dlfcn.h
+check_cpp
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	#include <dlfcn.h>
+     2	int x;
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -E -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+/tmp/ffmpeg-conf--90795-.c:1:10: fatal error: dlfcn.h: No such file or directory
+    1 | #include <dlfcn.h>
+      |          ^~~~~~~~~
+compilation terminated.
+check_func dlopen
+check_ld
+check_cc
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	extern int dlopen();
+     2	int main(){
+     3	    dlopen();
+     4	}
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -c -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+psp-gcc -L/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/libfaad/.libs -o /tmp/ffmpeg-conf--90795- /tmp/ffmpeg-conf--90795-.o -lm -lz -lfaad
+/usr/local/pspdev/lib/gcc/psp/15.2.0/../../../../psp/bin/ld: /tmp/ffmpeg-conf--90795-.o: in function `main':
+(.text+0x8): undefined reference to `dlopen'
+collect2: error: ld returned 1 exit status
+check_func dlopen -ldl
+check_ld -ldl
+check_cc
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	extern int dlopen();
+     2	int main(){
+     3	    dlopen();
+     4	}
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -c -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+psp-gcc -L/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/libfaad/.libs -o /tmp/ffmpeg-conf--90795- /tmp/ffmpeg-conf--90795-.o -lm -lz -lfaad -ldl
+/usr/local/pspdev/lib/gcc/psp/15.2.0/../../../../psp/bin/ld: cannot find -ldl: No such file or directory
+/usr/local/pspdev/lib/gcc/psp/15.2.0/../../../../psp/bin/ld: have you installed the static version of the dl library ?
+collect2: error: ld returned 1 exit status
+check_func getrusage
+check_ld
+check_cc
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	extern int getrusage();
+     2	int main(){
+     3	    getrusage();
+     4	}
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -c -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+psp-gcc -L/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/libfaad/.libs -o /tmp/ffmpeg-conf--90795- /tmp/ffmpeg-conf--90795-.o -lm -lz -lfaad
+/usr/local/pspdev/lib/gcc/psp/15.2.0/../../../../psp/bin/ld: /tmp/ffmpeg-conf--90795-.o: in function `main':
+(.text+0x8): undefined reference to `getrusage'
+collect2: error: ld returned 1 exit status
+check_func2 windows.h GetProcessTimes
+check_ld
+check_cc
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	
+     2	#include <windows.h>
+     3	int main(){
+     4	    (void) GetProcessTimes;
+     5	    return 0;
+     6	}
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -c -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+/tmp/ffmpeg-conf--90795-.c:2:10: fatal error: windows.h: No such file or directory
+    2 | #include <windows.h>
+      |          ^~~~~~~~~~~
+compilation terminated.
+check_func fork
+check_ld
+check_cc
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	extern int fork();
+     2	int main(){
+     3	    fork();
+     4	}
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -c -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+psp-gcc -L/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/libfaad/.libs -o /tmp/ffmpeg-conf--90795- /tmp/ffmpeg-conf--90795-.o -lm -lz -lfaad
+check_func closesocket
+check_ld
+check_cc
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	extern int closesocket();
+     2	int main(){
+     3	    closesocket();
+     4	}
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -c -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+psp-gcc -L/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/libfaad/.libs -o /tmp/ffmpeg-conf--90795- /tmp/ffmpeg-conf--90795-.o -lm -lz -lfaad
+/usr/local/pspdev/lib/gcc/psp/15.2.0/../../../../psp/bin/ld: /tmp/ffmpeg-conf--90795-.o: in function `main':
+(.text+0x8): undefined reference to `closesocket'
+collect2: error: ld returned 1 exit status
+imlib2-config --version
+./configure: 388: imlib2-config: not found
+freetype-config --version
+./configure: 388: freetype-config: not found
+check_header linux/videodev.h
+check_cpp
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	#include <linux/videodev.h>
+     2	int x;
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -E -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+/tmp/ffmpeg-conf--90795-.c:1:10: fatal error: linux/videodev.h: No such file or directory
+    1 | #include <linux/videodev.h>
+      |          ^~~~~~~~~~~~~~~~~~
+compilation terminated.
+check_header linux/videodev2.h
+check_cpp
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	#include <linux/videodev2.h>
+     2	int x;
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -E -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+/tmp/ffmpeg-conf--90795-.c:1:10: fatal error: linux/videodev2.h: No such file or directory
+    1 | #include <linux/videodev2.h>
+      |          ^~~~~~~~~~~~~~~~~~~
+compilation terminated.
+check_header dev/bktr/ioctl_meteor.h
+check_cpp
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	#include <dev/bktr/ioctl_meteor.h>
+     2	int x;
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -E -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+/tmp/ffmpeg-conf--90795-.c:1:10: fatal error: dev/bktr/ioctl_meteor.h: No such file or directory
+    1 | #include <dev/bktr/ioctl_meteor.h>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~
+compilation terminated.
+check_header machine/ioctl_meteor.h
+check_cpp
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	#include <machine/ioctl_meteor.h>
+     2	int x;
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -E -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+/tmp/ffmpeg-conf--90795-.c:1:10: fatal error: machine/ioctl_meteor.h: No such file or directory
+    1 | #include <machine/ioctl_meteor.h>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~
+compilation terminated.
+check_header dev/video/meteor/ioctl_meteor.h
+check_cpp
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	#include <dev/video/meteor/ioctl_meteor.h>
+     2	int x;
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -E -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+/tmp/ffmpeg-conf--90795-.c:1:10: fatal error: dev/video/meteor/ioctl_meteor.h: No such file or directory
+    1 | #include <dev/video/meteor/ioctl_meteor.h>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+compilation terminated.
+check_header dev/ic/bt8xx.h
+check_cpp
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	#include <dev/ic/bt8xx.h>
+     2	int x;
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -E -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+/tmp/ffmpeg-conf--90795-.c:1:10: fatal error: dev/ic/bt8xx.h: No such file or directory
+    1 | #include <dev/ic/bt8xx.h>
+      |          ^~~~~~~~~~~~~~~~
+compilation terminated.
+check_header sys/soundcard.h
+check_cpp
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	#include <sys/soundcard.h>
+     2	int x;
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -E -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+/tmp/ffmpeg-conf--90795-.c:1:10: fatal error: sys/soundcard.h: No such file or directory
+    1 | #include <sys/soundcard.h>
+      |          ^~~~~~~~~~~~~~~~~
+compilation terminated.
+check_header soundcard.h
+check_cpp
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	#include <soundcard.h>
+     2	int x;
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -E -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+/tmp/ffmpeg-conf--90795-.c:1:10: fatal error: soundcard.h: No such file or directory
+    1 | #include <soundcard.h>
+      |          ^~~~~~~~~~~~~
+compilation terminated.
+check_cflags -Wdeclaration-after-statement
+check_cc -Wdeclaration-after-statement
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	int x;
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -Wdeclaration-after-statement -c -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+check_cflags -Wall
+check_cc -Wall
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	int x;
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -Wdeclaration-after-statement -Wall -c -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+check_cflags -Wno-switch
+check_cc -Wno-switch
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	int x;
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -Wdeclaration-after-statement -Wall -Wno-switch -c -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+check_cflags -Wdisabled-optimization
+check_cc -Wdisabled-optimization
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	int x;
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -Wdeclaration-after-statement -Wall -Wno-switch -Wdisabled-optimization -c -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+check_cflags -Wpointer-arith
+check_cc -Wpointer-arith
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	int x;
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -Wdeclaration-after-statement -Wall -Wno-switch -Wdisabled-optimization -Wpointer-arith -c -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+check_cflags -Wredundant-decls
+check_cc -Wredundant-decls
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	int x;
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -Wdeclaration-after-statement -Wall -Wno-switch -Wdisabled-optimization -Wpointer-arith -Wredundant-decls -c -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+check_cflags -Wno-pointer-sign
+check_cc -Wno-pointer-sign
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	int x;
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -Wdeclaration-after-statement -Wall -Wno-switch -Wdisabled-optimization -Wpointer-arith -Wredundant-decls -Wno-pointer-sign -c -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+check_ldflags -Wl,--warn-common
+check_ld -Wl,--warn-common
+check_cc
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	int main(){
+     2	    return 0;
+     3	}
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -Wdeclaration-after-statement -Wall -Wno-switch -Wdisabled-optimization -Wpointer-arith -Wredundant-decls -Wno-pointer-sign -c -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+psp-gcc -L/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/libfaad/.libs -Wl,--warn-common -o /tmp/ffmpeg-conf--90795- /tmp/ffmpeg-conf--90795-.o -lm -lz -lfaad
+check_ldflags -Wl,--as-needed -Wl,-rpath-link,\$(BUILD_ROOT)/libavcodec -Wl,-rpath-link,\$(BUILD_ROOT)/libavformat -Wl,-rpath-link,\$(BUILD_ROOT)/libavutil
+check_ld -Wl,--as-needed -Wl,-rpath-link,\$(BUILD_ROOT)/libavcodec -Wl,-rpath-link,\$(BUILD_ROOT)/libavformat -Wl,-rpath-link,\$(BUILD_ROOT)/libavutil
+check_cc
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	int main(){
+     2	    return 0;
+     3	}
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -Wdeclaration-after-statement -Wall -Wno-switch -Wdisabled-optimization -Wpointer-arith -Wredundant-decls -Wno-pointer-sign -c -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c
+psp-gcc -L/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/libfaad/.libs -Wl,--warn-common -Wl,--as-needed -Wl,-rpath-link,\$(BUILD_ROOT)/libavcodec -Wl,-rpath-link,\$(BUILD_ROOT)/libavformat -Wl,-rpath-link,\$(BUILD_ROOT)/libavutil -o /tmp/ffmpeg-conf--90795- /tmp/ffmpeg-conf--90795-.o -lm -lz -lfaad
+check_cc
+BEGIN /tmp/ffmpeg-conf--90795-.c
+     1	asm (".align 3");
+END /tmp/ffmpeg-conf--90795-.c
+psp-gcc -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -fno-strict-aliasing -G0 -I/home/gianni/Desktop/PSP/workplace/re/vendor-sources/faad2-2.7/include -fomit-frame-pointer -Wdeclaration-after-statement -Wall -Wno-switch -Wdisabled-optimization -Wpointer-arith -Wredundant-decls -Wno-pointer-sign -O3 -c -o /tmp/ffmpeg-conf--90795-.o /tmp/ffmpeg-conf--90795-.c

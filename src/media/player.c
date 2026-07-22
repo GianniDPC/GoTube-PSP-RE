@@ -180,6 +180,12 @@ static int stream_read_packet(void *opaque, uint8_t *buffer, int size)
     return go_http_stream_read(opaque, buffer, size);
 }
 
+static offset_t stream_seek_packet(void *opaque, offset_t offset, int whence)
+{
+    if (player_cancel) return -1;
+    return (offset_t)go_http_stream_seek(opaque, offset, whence);
+}
+
 static int video_decode_worker(SceSize args, void *argp)
 {
     PlayerPipeline *pipeline = *(PlayerPipeline **)argp;
@@ -279,8 +285,8 @@ static int decode_file(const char *path, int remote)
         io_buffer = av_malloc(32768);
         if (!http_stream || !io_buffer || !input) goto fail;
         init_put_byte(&io, io_buffer, 32768, 0, http_stream,
-                      stream_read_packet, NULL, NULL);
-        io.is_streamed = 1;
+                      stream_read_packet, NULL, stream_seek_packet);
+        io.is_streamed = 0;
         if (av_open_input_stream(&format, &io, path, input, NULL) < 0) goto fail;
     } else if (av_open_input_file(&format, path, NULL, 0, NULL) < 0) goto fail;
     if (av_find_stream_info(format) < 0) {

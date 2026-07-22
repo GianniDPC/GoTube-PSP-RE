@@ -159,6 +159,13 @@ int go_http_stream_read(void *opaque, unsigned char *buffer, int size)
     return sceHttpReadData(stream->req, buffer, size);
 }
 
+long long go_http_stream_seek(void *opaque, long long offset, int whence)
+{
+    GTHttpStream *stream = opaque;
+    if (!stream || !stream->modern || !stream->modern_stream) return -1;
+    return go_curl_stream_seek(stream->modern_stream, offset, whence);
+}
+
 void go_http_stream_close(void *opaque)
 {
     GTHttpStream *stream = opaque;

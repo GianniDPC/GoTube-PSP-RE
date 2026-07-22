@@ -5,12 +5,13 @@
 #include <malloc.h>
 #include <psprtc.h>
 #include <time.h>
+#include <strings.h>
 #include <mbedtls/ssl.h>
 #include <mbedtls/x509_crt.h>
 
 #define CA_FILE "ms0:/PSP/GAME/GoTube/cacert.pem"
 #define BODY_LIMIT (512 * 1024)
-#define RING_SIZE (256 * 1024)
+#define RING_SIZE (512 * 1024)
 
 typedef struct {
     char *data;
@@ -20,7 +21,9 @@ typedef struct {
 typedef struct {
     char url[2048];
     unsigned char *ring;
-    volatile int read_pos, write_pos, used, done, cancel, error;
+    volatile int done, cancel, error;
+    volatile long long data_start, data_end, position;
+    long long start_offset, total_size;
     SceUID thread;
 } CurlStream;
 
@@ -244,20 +247,43 @@ static size_t stream_write(char *ptr, size_t size, size_t count, void *opaque)
     CurlStream *stream = opaque;
     int total = size * count, copied = 0;
     while (copied < total && !stream->cancel) {
-        int free_bytes = RING_SIZE - stream->used;
+        long long span = stream->data_end - stream->data_start;
+        long long discardable = stream->position - stream->data_start;
+        int free_bytes, write_pos;
         int chunk;
+        if (span >= RING_SIZE && discardable > 0) {
+            long long discard = discardable;
+            if (discard > RING_SIZE / 4) discard = RING_SIZE / 4;
+            stream->data_start += discard;
+            span -= discard;
+        }
+        free_bytes = RING_SIZE - (int)span;
         if (free_bytes <= 0) { sceKernelDelayThreadCB(1000); continue; }
         chunk = total - copied;
         if (chunk > free_bytes) chunk = free_bytes;
-        if (chunk > RING_SIZE - stream->write_pos)
-            chunk = RING_SIZE - stream->write_pos;
-        memcpy(stream->ring + stream->write_pos, ptr + copied, chunk);
+        write_pos = (int)(stream->data_end % RING_SIZE);
+        if (chunk > RING_SIZE - write_pos) chunk = RING_SIZE - write_pos;
+        memcpy(stream->ring + write_pos, ptr + copied, chunk);
         __sync_synchronize();
-        stream->write_pos = (stream->write_pos + chunk) % RING_SIZE;
-        __sync_add_and_fetch(&stream->used, chunk);
+        stream->data_end += chunk;
         copied += chunk;
     }
     return stream->cancel ? 0 : total;
+}
+
+static size_t stream_header(char *ptr, size_t size, size_t count, void *opaque)
+{
+    CurlStream *stream = opaque;
+    int bytes = size * count;
+    long long start, end, total;
+    if (bytes > 14 && strncasecmp(ptr, "Content-Range:", 14) == 0 &&
+        sscanf(ptr + 14, " bytes %lld-%lld/%lld", &start, &end, &total) == 3)
+        stream->total_size = total;
+    else if (stream->start_offset == 0 && bytes > 15 &&
+             strncasecmp(ptr, "Content-Length:", 15) == 0 &&
+             sscanf(ptr + 15, " %lld", &total) == 1)
+        stream->total_size = total;
+    return bytes;
 }
 
 static int stream_thread(SceSize args, void *argp)
@@ -265,9 +291,16 @@ static int stream_thread(SceSize args, void *argp)
     CurlStream *stream = *(CurlStream **)argp;
     CURL *curl = curl_easy_init();
     CURLcode result = CURLE_FAILED_INIT;
-    go_modern_trace("STREAM worker begin");
+    char range[64];
+    go_modern_trace("STREAM worker begin offset=%lld", stream->start_offset);
     if (curl) {
         curl_common(curl, stream->url);
+        if (stream->start_offset > 0) {
+            snprintf(range, sizeof(range), "%lld-", stream->start_offset);
+            curl_easy_setopt(curl, CURLOPT_RANGE, range);
+        }
+        curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, stream_header);
+        curl_easy_setopt(curl, CURLOPT_HEADERDATA, stream);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, stream_write);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, stream);
         result = curl_easy_perform(curl);
@@ -280,6 +313,36 @@ static int stream_thread(SceSize args, void *argp)
     return 0;
 }
 
+static int stream_start(CurlStream *stream, long long offset)
+{
+    long long fetch_offset = offset > RING_SIZE / 2 ?
+                             offset - RING_SIZE / 2 : 0;
+    stream->start_offset = stream->data_start = stream->data_end = fetch_offset;
+    stream->position = offset;
+    stream->done = stream->cancel = stream->error = 0;
+    stream->thread = sceKernelCreateThread("GoTube.curl", stream_thread,
+                      0x24, 0x20000, PSP_THREAD_ATTR_USER, NULL);
+    if (stream->thread < 0 ||
+        sceKernelStartThread(stream->thread, sizeof(stream), &stream) < 0) {
+        if (stream->thread >= 0) sceKernelDeleteThread(stream->thread);
+        stream->thread = -1;
+        return -1;
+    }
+    return 0;
+}
+
+static long long url_content_length(const char *url)
+{
+    const char *p = strstr(url, "clen=");
+    long long value = 0;
+    if (!p || (p != url && p[-1] != '&' && p[-1] != '?')) return 0;
+    p += 5;
+    while (*p >= '0' && *p <= '9') {
+        value = value * 10 + (*p++ - '0');
+    }
+    return value;
+}
+
 void *go_curl_stream_open(const char *url)
 {
     CurlStream *stream;
@@ -289,11 +352,8 @@ void *go_curl_stream_open(const char *url)
     stream->ring = memalign(64, RING_SIZE);
     if (!stream->ring) { free(stream); return NULL; }
     strncpy(stream->url, url, sizeof(stream->url) - 1);
-    stream->thread = sceKernelCreateThread("GoTube.curl", stream_thread,
-                      0x24, 0x20000, PSP_THREAD_ATTR_USER, NULL);
-    if (stream->thread < 0 ||
-        sceKernelStartThread(stream->thread, sizeof(stream), &stream) < 0) {
-        if (stream->thread >= 0) sceKernelDeleteThread(stream->thread);
+    stream->total_size = url_content_length(url);
+    if (stream_start(stream, 0) < 0) {
         free(stream->ring); free(stream); return NULL;
     }
     return stream;
@@ -305,19 +365,58 @@ int go_curl_stream_read(void *opaque, unsigned char *buffer, int size)
     int copied = 0;
     if (!stream || !buffer || size < 1) return -1;
     while (copied == 0) {
-        int available = stream->used, chunk;
+        long long available64 = stream->data_end - stream->position;
+        int available = available64 > 0x7fffffff ? 0x7fffffff : (int)available64;
+        int chunk, read_pos;
         if (available > 0) {
             chunk = available < size ? available : size;
-            if (chunk > RING_SIZE - stream->read_pos)
-                chunk = RING_SIZE - stream->read_pos;
-            memcpy(buffer, stream->ring + stream->read_pos, chunk);
-            stream->read_pos = (stream->read_pos + chunk) % RING_SIZE;
-            __sync_sub_and_fetch(&stream->used, chunk);
+            read_pos = (int)(stream->position % RING_SIZE);
+            if (chunk > RING_SIZE - read_pos) chunk = RING_SIZE - read_pos;
+            memcpy(buffer, stream->ring + read_pos, chunk);
+            stream->position += chunk;
             copied = chunk;
         } else if (stream->done) return stream->error ? -1 : 0;
         else sceKernelDelayThreadCB(1000);
     }
     return copied;
+}
+
+long long go_curl_stream_seek(void *opaque, long long offset, int whence)
+{
+    CurlStream *stream = opaque;
+    long long target;
+    if (!stream) return -1;
+    if (whence == 0x10000) return stream->total_size > 0 ? stream->total_size : -1;
+    if (whence == SEEK_SET) target = offset;
+    else if (whence == SEEK_CUR) target = stream->position + offset;
+    else if (whence == SEEK_END && stream->total_size > 0)
+        target = stream->total_size + offset;
+    else return -1;
+    if (target < 0 || (stream->total_size > 0 && target > stream->total_size))
+        return -1;
+    if (target == stream->position) return target;
+    if (target >= stream->data_start && target <= stream->data_end) {
+        stream->position = target;
+        return target;
+    }
+    /* The old FFmpeg MOV demuxer alternates between nearby audio and video
+     * chunks.  A forward seek just beyond data_end is normally data that the
+     * active transfer is about to deliver, not a random access request.  Keep
+     * the connection alive and let read() wait for it; restarting here turns
+     * ordinary playback into one TLS handshake per packet on a real PSP. */
+    if (!stream->done && target > stream->data_end &&
+        target - stream->data_end <= RING_SIZE) {
+        stream->position = target;
+        return target;
+    }
+    go_modern_trace("STREAM seek from=%lld to=%lld whence=%d total=%lld",
+                    stream->position, target, whence, stream->total_size);
+    stream->cancel = 1;
+    sceKernelWaitThreadEnd(stream->thread, NULL);
+    sceKernelDeleteThread(stream->thread);
+    stream->thread = -1;
+    if (stream_start(stream, target) < 0) return -1;
+    return target;
 }
 
 void go_curl_stream_close(void *opaque)

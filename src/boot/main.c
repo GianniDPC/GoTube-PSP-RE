@@ -73,6 +73,27 @@ int user_main(SceSize args, void *argp)
         go_modern_trace("SMOKE search_results=%d first=%.80s",
                         smoke_results,
                         smoke_results > 0 ? g_results[0].title : "");
+        if (smoke_results > 0) {
+            int i, resolved = -1;
+            for (i = 0; i < smoke_results && resolved < 0; i++) {
+                resolved = go_modern_resolve(g_results[i].url, g_video_url,
+                                             sizeof(g_video_url));
+                go_modern_trace("SMOKE resolve index=%d result=%d title=%.60s",
+                                i, resolved, g_results[i].title);
+            }
+            if (resolved > 0) {
+                int ticks;
+                go_modern_trace("SMOKE player_start=%d", go_player_start(g_video_url));
+                for (ticks = 0; ticks < 300; ticks++) {
+                    if (go_player_state() < 0 || go_player_state() == 3) break;
+                    sceKernelDelayThread(100000);
+                }
+                go_modern_trace("SMOKE player_state=%d time=%d duration=%d",
+                                go_player_state(), go_player_time_cs(),
+                                go_player_duration_cs());
+                go_player_stop();
+            }
+        }
     }
     sceKernelDelayThread(1000000);
     sceKernelExitGame();

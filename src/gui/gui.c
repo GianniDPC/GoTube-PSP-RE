@@ -868,7 +868,18 @@ void go_gui_render(void)
                                    GU_ONE_MINUS_SRC_ALPHA, 0, 0);
                     sceGuColor(0xffffffff);
                     if (go_player_overlay_mode() & 2) render_comments();
-                    if (go_player_overlay_mode() & 1) render_player_status();
+                }
+                /* Status belongs to the player state, not to availability of
+                 * the first decoded frame.  Keeping it outside video_drawn
+                 * avoids an opaque black screen while MP4 metadata/keyframes
+                 * are still arriving (and exposes a playback failure). */
+                if (go_player_overlay_mode() & 1) {
+                    intraFontActivate(g_font);
+                    sceGuEnable(GU_BLEND);
+                    sceGuBlendFunc(GU_ADD, GU_SRC_ALPHA,
+                                   GU_ONE_MINUS_SRC_ALPHA, 0, 0);
+                    sceGuColor(0xffffffff);
+                    render_player_status();
                 }
             }
             render_results();
